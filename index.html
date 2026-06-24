@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIS® – Strukturierte Informationssammlung</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/wing.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -117,7 +118,8 @@
 
         .brand-block { display: flex; flex-direction: column; gap: 0.35rem; }
 
-        .logo { display: flex; align-items: baseline; gap: 0.6rem; }
+        .logo { display: flex; align-items: center; gap: 0.6rem; }
+        .logo-mark { width: 38px; height: auto; flex-shrink: 0; }
 
         .logo-main {
             font-family: var(--serif);
@@ -924,6 +926,7 @@
     <div class="auth-overlay visible" id="authOverlay">
         <div class="auth-card">
             <div class="logo">
+                <img class="logo-mark" src="/assets/wing.svg" alt="">
                 <span class="logo-main">SIS<span class="logo-reg">®</span></span>
                 <span class="logo-badge">stationär</span>
             </div>
@@ -949,6 +952,7 @@
             <div class="header-top">
                 <div class="brand-block">
                     <div class="logo">
+                        <img class="logo-mark" src="/assets/wing.svg" alt="">
                         <span class="logo-main">SIS<span class="logo-reg">®</span></span>
                         <span class="logo-badge">stationär</span>
                     </div>
