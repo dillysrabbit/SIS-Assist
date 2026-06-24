@@ -1,0 +1,55 @@
+<!-- @dsCard group="Components" name="Themenfeld-Cards" subtitle="Aufklappbare Karte mit nummeriertem Badge · O-Ton-Sektion" -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cards – SIS Assist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --color-bg:#f7f8fc;--color-card:#fff;--color-bg-warm:#f1f2fb;--color-primary:#6366f1;
+    --color-primary-pale:#eef2ff;--color-accent-cyan:#06b6d4;--color-text:#1e1b39;--color-text-muted:#6b7280;
+    --color-border:#e5e7f0;--color-border-light:#f0f1f8;--radius-md:16px;--radius-lg:24px;
+    --font-body:'Inter',sans-serif;--font-display:'Plus Jakarta Sans',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:var(--color-bg);color:var(--color-text);padding:2.5rem;line-height:1.6;max-width:720px}
+  .oton{background:linear-gradient(135deg,#eef2ff 0%,#faf5ff 50%,#ecfeff 100%);border:1px solid rgba(99,102,241,.13);border-radius:var(--radius-lg);padding:2rem;margin-bottom:1.5rem}
+  .oton-head{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
+  .oton-icon{width:48px;height:48px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,var(--color-primary) 0%,var(--color-accent-cyan) 100%)}
+  .oton-title{font-family:var(--font-display);font-weight:700;font-size:1.4rem;color:var(--color-primary);letter-spacing:-.01em}
+  .oton-sub{font-size:.9rem;color:var(--color-text-muted)}
+  .ta{width:100%;min-height:90px;font-family:var(--font-body);font-size:1rem;padding:1rem;border:1px solid rgba(99,102,241,.22);border-radius:var(--radius-md);background:#fff;resize:vertical}
+  .card{background:var(--color-card);border:1px solid var(--color-border-light);border-radius:var(--radius-lg);box-shadow:0 2px 20px rgba(99,102,241,.07);overflow:hidden;margin-bottom:1rem}
+  .card-head{background:var(--color-bg-warm);padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem;cursor:pointer}
+  .num{width:36px;height:36px;border-radius:50%;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.9rem;flex-shrink:0}
+  .card-title{font-weight:500;flex:1}
+  .chev{color:var(--color-text-muted)}
+  .card-body{padding:1.5rem;border-top:1px solid var(--color-border-light)}
+  .card.collapsed .card-body{display:none}
+  .card.collapsed .chev{transform:rotate(-90deg)}
+</style>
+</head>
+<body>
+  <section class="oton">
+    <div class="oton-head">
+      <div class="oton-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div><div class="oton-title">„Was bewegt Sie im Augenblick?"</div><div class="oton-sub">Was brauchen Sie? Was können wir für Sie tun?</div></div>
+    </div>
+    <textarea class="ta" placeholder="Aussagen in eigenen Worten..."></textarea>
+  </section>
+
+  <div class="card">
+    <div class="card-head"><span class="num">1</span><span class="card-title">Kognitive und kommunikative Fähigkeiten</span><svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="card-body"><textarea class="ta" style="min-height:110px" placeholder="Orientierung, Gedächtnis, Aufmerksamkeit, Kommunikationsfähigkeit..."></textarea></div>
+  </div>
+
+  <div class="card collapsed">
+    <div class="card-head"><span class="num">2</span><span class="card-title">Mobilität und Beweglichkeit</span><svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+    <div class="card-body"><textarea class="ta"></textarea></div>
+  </div>
+</body>
+</html>
