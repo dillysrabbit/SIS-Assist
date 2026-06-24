@@ -475,6 +475,25 @@
             transform: translate(-50%, -50%) rotate(45deg);
         }
 
+        .risiko-freetext {
+            width: 100%;
+            min-width: 130px;
+            font-family: var(--sans);
+            font-size: 13px;
+            color: var(--ink);
+            padding: 8px 10px;
+            background: var(--paper);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--r-xs);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .risiko-freetext:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+        }
+        .risiko-freetext::placeholder { color: var(--ink-faint); }
+
         /* ===== Action buttons ===== */
         .action-section {
             display: flex;
@@ -1273,7 +1292,8 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
             'Mobilität und Beweglichkeit',
             'Krankheitsbezogene Anforderungen und Belastungen',
             'Selbstversorgung',
-            'Leben in sozialen Beziehungen'
+            'Leben in sozialen Beziehungen',
+            'Wohnen/Häuslichkeit'
         ];
 
         const RISIKEN = ['Dekubitus', 'Sturz', 'Inkontinenz', 'Schmerz', 'Ernährung', 'Sonstiges'];
@@ -1512,7 +1532,15 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
                 html += `
                     <tr>
                         <td>${tfIndex + 1}. ${themenfeld}</td>
-                        ${RISIKEN.map((risiko, rIndex) => `
+                        ${RISIKEN.map((risiko, rIndex) => {
+                            if (risiko === 'Sonstiges') {
+                                return `
+                            <td>
+                                <input type="text" class="risiko-freetext" name="sonstiges_${tfIndex}" placeholder="Freitext …">
+                            </td>
+                                `;
+                            }
+                            return `
                             <td>
                                 <div class="risiko-options">
                                     <label class="risiko-option">
@@ -1531,7 +1559,8 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
                                     </label>
                                 </div>
                             </td>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </tr>
                 `;
             });
@@ -1564,16 +1593,21 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
             // Collect Risiken
             THEMENFELDER.forEach((_, tfIndex) => {
                 data.risiken[tfIndex] = {};
-                RISIKEN.forEach((_, rIndex) => {
-                    const radioName = `risiko_${tfIndex}_${rIndex}`;
-                    const checkboxName = `weitere_${tfIndex}_${rIndex}`;
-                    const selectedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
-                    const checkbox = document.querySelector(`input[name="${checkboxName}"]`);
+                RISIKEN.forEach((risiko, rIndex) => {
+                    if (risiko === 'Sonstiges') {
+                        const txt = document.querySelector(`input[name="sonstiges_${tfIndex}"]`);
+                        data.risiken[tfIndex][rIndex] = { text: txt ? txt.value : '' };
+                    } else {
+                        const radioName = `risiko_${tfIndex}_${rIndex}`;
+                        const checkboxName = `weitere_${tfIndex}_${rIndex}`;
+                        const selectedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
+                        const checkbox = document.querySelector(`input[name="${checkboxName}"]`);
 
-                    data.risiken[tfIndex][rIndex] = {
-                        value: selectedRadio ? selectedRadio.value : null,
-                        weitere: checkbox ? checkbox.checked : false
-                    };
+                        data.risiken[tfIndex][rIndex] = {
+                            value: selectedRadio ? selectedRadio.value : null,
+                            weitere: checkbox ? checkbox.checked : false
+                        };
+                    }
                 });
             });
 
@@ -1604,13 +1638,19 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
                 Object.keys(data.risiken).forEach(tfIndex => {
                     Object.keys(data.risiken[tfIndex]).forEach(rIndex => {
                         const risikoData = data.risiken[tfIndex][rIndex];
-                        if (risikoData.value) {
-                            const radio = document.querySelector(`input[name="risiko_${tfIndex}_${rIndex}"][value="${risikoData.value}"]`);
-                            if (radio) radio.checked = true;
-                        }
-                        if (risikoData.weitere) {
-                            const checkbox = document.querySelector(`input[name="weitere_${tfIndex}_${rIndex}"]`);
-                            if (checkbox) checkbox.checked = true;
+                        if (!risikoData) return;
+                        if (typeof risikoData.text === 'string') {
+                            const txt = document.querySelector(`input[name="sonstiges_${tfIndex}"]`);
+                            if (txt) txt.value = risikoData.text;
+                        } else {
+                            if (risikoData.value) {
+                                const radio = document.querySelector(`input[name="risiko_${tfIndex}_${rIndex}"][value="${risikoData.value}"]`);
+                                if (radio) radio.checked = true;
+                            }
+                            if (risikoData.weitere) {
+                                const checkbox = document.querySelector(`input[name="weitere_${tfIndex}_${rIndex}"]`);
+                                if (checkbox) checkbox.checked = true;
+                            }
                         }
                     });
                 });
@@ -1760,10 +1800,16 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
 
             THEMENFELDER.forEach((tf, tfIndex) => {
                 let row = `| ${tfIndex + 1}. ${tf} |`;
-                RISIKEN.forEach((_, rIndex) => {
+                RISIKEN.forEach((risikoName, rIndex) => {
                     const risiko = formData.risiken[tfIndex]?.[rIndex];
-                    let cell = risiko?.value || '-';
-                    if (risiko?.weitere) cell += ' (!)';
+                    let cell;
+                    if (risikoName === 'Sonstiges') {
+                        cell = (risiko?.text || '').trim() || '-';
+                    } else {
+                        cell = risiko?.value || '-';
+                        if (risiko?.weitere) cell += ' (!)';
+                    }
+                    cell = cell.replace(/\r?\n/g, ' ').replace(/\|/g, '/');
                     row += ` ${cell} |`;
                 });
                 message += row + '\n';
