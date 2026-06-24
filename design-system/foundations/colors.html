@@ -1,0 +1,62 @@
+<!-- @dsCard group="Foundations" name="Farben & Tokens" subtitle="Indigo Primär · Pink/Cyan Akzente · neutrale Skala" -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farben & Tokens – SIS Assist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --color-bg:#f7f8fc; --color-card:#fff;
+    --color-primary:#6366f1; --color-primary-light:#818cf8; --color-primary-pale:#eef2ff;
+    --color-accent:#ec4899; --color-accent-light:#f472b6; --color-accent-cyan:#06b6d4;
+    --color-text:#1e1b39; --color-text-muted:#6b7280; --color-border:#e5e7f0;
+    --color-danger:#ef4444; --color-success:#10b981;
+    --font-display:'Plus Jakarta Sans',sans-serif; --font-body:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:var(--color-bg);color:var(--color-text);padding:2.5rem;line-height:1.6}
+  h1{font-family:var(--font-display);font-weight:800;font-size:1.6rem;letter-spacing:-.02em;margin-bottom:.25rem}
+  .sub{color:var(--color-text-muted);margin-bottom:2rem;font-size:.95rem}
+  h2{font-family:var(--font-display);font-weight:700;font-size:1rem;margin:2rem 0 1rem;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem}
+  .swatch{background:var(--color-card);border:1px solid var(--color-border);border-radius:16px;overflow:hidden;box-shadow:0 2px 20px rgba(99,102,241,.07)}
+  .chip{height:84px}
+  .meta{padding:.75rem .9rem}
+  .meta .name{font-weight:600;font-size:.85rem}
+  .meta .hex{color:var(--color-text-muted);font-size:.78rem;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+  <h1>Farben & Tokens</h1>
+  <p class="sub">Modern &amp; Friendly — Indigo als Primärfarbe, Pink &amp; Cyan als Akzente, weiche neutrale Skala.</p>
+
+  <h2>Primär & Akzente</h2>
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:#6366f1"></div><div class="meta"><div class="name">Primary</div><div class="hex">#6366f1</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#818cf8"></div><div class="meta"><div class="name">Primary Light</div><div class="hex">#818cf8</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#eef2ff"></div><div class="meta"><div class="name">Primary Pale</div><div class="hex">#eef2ff</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#ec4899"></div><div class="meta"><div class="name">Accent Pink</div><div class="hex">#ec4899</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#f472b6"></div><div class="meta"><div class="name">Accent Light</div><div class="hex">#f472b6</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#06b6d4"></div><div class="meta"><div class="name">Accent Cyan</div><div class="hex">#06b6d4</div></div></div>
+  </div>
+
+  <h2>Neutral & Status</h2>
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:#f7f8fc"></div><div class="meta"><div class="name">Background</div><div class="hex">#f7f8fc</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#ffffff;border-bottom:1px solid #e5e7f0"></div><div class="meta"><div class="name">Card</div><div class="hex">#ffffff</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#1e1b39"></div><div class="meta"><div class="name">Text</div><div class="hex">#1e1b39</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#6b7280"></div><div class="meta"><div class="name">Text Muted</div><div class="hex">#6b7280</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#10b981"></div><div class="meta"><div class="name">Success</div><div class="hex">#10b981</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#ef4444"></div><div class="meta"><div class="name">Danger</div><div class="hex">#ef4444</div></div></div>
+  </div>
+
+  <h2>Header-Gradient</h2>
+  <div class="grid" style="grid-template-columns:1fr">
+    <div class="swatch"><div class="chip" style="height:64px;background:linear-gradient(120deg,#6366f1 0%,#8b5cf6 55%,#d946ef 110%)"></div><div class="meta"><div class="name">Header / Brand Gradient</div><div class="hex">#6366f1 → #8b5cf6 → #d946ef</div></div></div>
+  </div>
+</body>
+</html>

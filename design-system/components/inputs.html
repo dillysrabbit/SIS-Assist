@@ -1,0 +1,42 @@
+<!-- @dsCard group="Components" name="Formularfelder" subtitle="Text · Datum · Textarea · Fokus-Zustand" -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formularfelder – SIS Assist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --color-bg:#f7f8fc;--color-card:#fff;--color-primary:#6366f1;--color-primary-pale:#eef2ff;
+    --color-text:#1e1b39;--color-text-muted:#6b7280;--color-border:#e5e7f0;--color-border-light:#f0f1f8;
+    --radius-sm:10px;--radius-md:16px;--radius-lg:24px;--font-body:'Inter',sans-serif;--font-display:'Plus Jakarta Sans',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:var(--color-bg);color:var(--color-text);padding:2.5rem;line-height:1.6}
+  .card{background:var(--color-card);border:1px solid var(--color-border-light);border-radius:var(--radius-lg);padding:2rem;box-shadow:0 2px 20px rgba(99,102,241,.07);max-width:640px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem}
+  .form-group{display:flex;flex-direction:column;gap:.5rem}
+  .form-label{font-size:.8rem;font-weight:500;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em}
+  .form-input{font-family:var(--font-body);font-size:1rem;padding:.8rem 1rem;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg);color:var(--color-text);transition:.15s ease}
+  .form-input:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px var(--color-primary-pale)}
+  .ta{width:100%;min-height:120px;font-family:var(--font-body);font-size:1rem;padding:1rem;border:1px solid rgba(99,102,241,.22);border-radius:var(--radius-md);background:#fff;color:var(--color-text);resize:vertical;margin-top:1.5rem}
+  .ta:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+  .hint{font-size:.78rem;color:var(--color-text-muted);margin-top:.5rem}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="grid">
+      <div class="form-group"><label class="form-label">Name der Person</label><input class="form-input" placeholder="Vor- und Nachname"></div>
+      <div class="form-group"><label class="form-label">Geburtsdatum</label><input class="form-input" type="date"></div>
+      <div class="form-group"><label class="form-label">Fokus-Zustand</label><input class="form-input" value="Aktiv fokussiert" style="border-color:#6366f1;box-shadow:0 0 0 3px #eef2ff"></div>
+      <div class="form-group"><label class="form-label">Handzeichen</label><input class="form-input" placeholder="Kürzel"></div>
+    </div>
+    <textarea class="ta" placeholder="Erfassen Sie hier die Aussagen der pflegebedürftigen Person in deren eigenen Worten..."></textarea>
+    <p class="hint">Inhalte werden automatisch lokal gespeichert.</p>
+  </div>
+</body>
+</html>
