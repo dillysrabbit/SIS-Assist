@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@18/dist/iife/sdk.js"></script>
     <style>
         /* ===== CareConnect design tokens ===== */
         :root {
@@ -802,6 +803,76 @@
         .footer a { color: var(--accent); }
         .footer a:hover { text-decoration: underline; }
 
+        /* ===== Auth overlay ===== */
+        .auth-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--paper);
+            z-index: 4000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .auth-overlay.visible { display: flex; }
+
+        .auth-card {
+            width: 100%;
+            max-width: 380px;
+            background: var(--paper-2);
+            border: 1px solid var(--line);
+            border-radius: var(--r-card);
+            padding: 36px 32px;
+            box-shadow: var(--shadow-card-hover);
+        }
+        .auth-card .logo { margin-bottom: 18px; }
+        .auth-sub {
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: 1.05rem;
+            line-height: 1.4;
+            color: var(--ink-soft);
+            margin-bottom: 24px;
+        }
+        .auth-error { margin-top: 12px; min-height: 1em; font-size: 13px; color: var(--berry); }
+
+        /* ===== Header actions ===== */
+        .header-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+        .header-user { font-size: 13px; color: var(--ink-soft); }
+
+        /* ===== Bewohner-Leiste ===== */
+        .patient-bar {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            background: var(--paper-2);
+            border: 1px solid var(--line);
+            border-radius: var(--r-card);
+            padding: 16px 20px;
+            margin-bottom: 32px;
+        }
+        .patient-bar-left { display: flex; flex-direction: column; gap: 0.4rem; min-width: 240px; flex: 1; }
+        .patient-select {
+            font-family: var(--sans);
+            font-size: 15px;
+            color: var(--ink);
+            padding: 11px 14px;
+            background: var(--paper-2);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--r-input);
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .patient-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+        }
+        .patient-bar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn-sm { padding: 9px 16px; font-size: 13px; }
+
         /* ===== Responsive ===== */
         @media (max-width: 768px) {
             .header-top { flex-direction: column; align-items: flex-start; gap: 1rem; }
@@ -813,7 +884,9 @@
             .risiko-section,
             .result-card { padding: 20px; }
             .action-section { flex-direction: column-reverse; }
-            .btn { width: 100%; }
+            .action-section .btn { width: 100%; }
+            .patient-bar-actions { width: 100%; }
+            .patient-bar-actions .btn { flex: 1; }
             .modal-overlay { padding: 16px; }
             .modal { max-height: calc(100vh - 32px); }
             .toast-container { left: 16px; right: 16px; }
@@ -827,6 +900,29 @@
     </style>
 </head>
 <body>
+    <!-- Login Overlay -->
+    <div class="auth-overlay visible" id="authOverlay">
+        <div class="auth-card">
+            <div class="logo">
+                <span class="logo-main">SIS<span class="logo-reg">®</span></span>
+                <span class="logo-badge">stationär</span>
+            </div>
+            <p class="auth-sub">Bitte melden Sie sich an, um auf die <span class="accent-word">Bewohnerdaten</span> zuzugreifen.</p>
+            <form id="loginForm" onsubmit="return doLogin(event)">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label" for="loginEmail">E-Mail</label>
+                    <input type="email" id="loginEmail" class="form-input" autocomplete="username" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label class="form-label" for="loginPassword">Passwort</label>
+                    <input type="password" id="loginPassword" class="form-input" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="loginBtn" style="width: 100%;">Anmelden</button>
+                <p class="auth-error" id="authError"></p>
+            </form>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="header">
         <div class="header-content">
@@ -838,19 +934,52 @@
                     </div>
                     <p class="header-subtitle">Strukturierte Informationssammlung</p>
                 </div>
-                <button class="admin-toggle" onclick="openAdminModal()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                    </svg>
-                    Einstellungen
-                </button>
+                <div class="header-actions">
+                    <span class="header-user" id="headerUser"></span>
+                    <button class="admin-toggle" onclick="openAdminModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        Einstellungen
+                    </button>
+                    <button class="admin-toggle" id="logoutBtn" onclick="logout()" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Abmelden
+                    </button>
+                </div>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="main-container">
+    <main class="main-container" id="appMain">
+        <!-- Bewohner-Leiste -->
+        <section class="patient-bar">
+            <div class="patient-bar-left">
+                <span class="eyebrow">Bewohner:in</span>
+                <select id="patientSelect" class="patient-select" onchange="onPatientSelectChange()"></select>
+            </div>
+            <div class="patient-bar-actions">
+                <button class="btn btn-secondary btn-sm" onclick="newPatient()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Neu
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="saveActivePatient(true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Speichern
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="deleteActivePatient()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Löschen
+                </button>
+            </div>
+        </section>
+
         <!-- Meta Information -->
         <section class="meta-section">
             <span class="eyebrow">Stammdaten</span>
@@ -1004,12 +1133,6 @@
 
         <!-- Action Buttons -->
         <div class="action-section">
-            <button class="btn btn-secondary" onclick="clearForm()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
-                Formular leeren
-            </button>
             <button class="btn btn-primary" onclick="generatePlan()" id="generateBtn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2L2 7l10 5 10-5-10-5z"/>
@@ -1084,20 +1207,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <!-- Password Section -->
-                <div class="password-section" id="passwordSection">
-                    <div class="admin-form-group">
-                        <label class="admin-label" for="adminPassword">Admin-Passwort</label>
-                        <input type="password" id="adminPassword" class="admin-input" placeholder="Passwort eingeben" onkeypress="if(event.key === 'Enter') authenticateAdmin()">
-                        <p class="admin-hint">Geben Sie das Admin-Passwort ein, um die Einstellungen zu bearbeiten.</p>
-                    </div>
-                    <button class="btn btn-primary" onclick="authenticateAdmin()" style="margin-top: 1rem;">
-                        Anmelden
-                    </button>
-                </div>
-
-                <!-- Admin Content -->
-                <div class="admin-content" id="adminContent">
+                <div class="admin-content visible" id="adminContent">
                     <div class="admin-form-group">
                         <span class="status-badge success">API-Key serverseitig verwaltet</span>
                         <p class="admin-hint">Der Claude API Key wird sicher als Server-Umgebungsvariable (Vercel) verwaltet. Er ist im Browser weder sichtbar noch nötig.</p>
@@ -1108,15 +1218,9 @@
                         <textarea id="systemPrompt" class="admin-textarea" placeholder="System Prompt für die KI..."></textarea>
                         <p class="admin-hint">Dieser Prompt definiert, wie die KI den Maßnahmenplan erstellt.</p>
                     </div>
-
-                    <div class="admin-form-group">
-                        <label class="admin-label" for="newAdminPassword">Admin-Passwort ändern</label>
-                        <input type="password" id="newAdminPassword" class="admin-input" placeholder="Neues Passwort (optional)">
-                        <p class="admin-hint">Lassen Sie das Feld leer, um das aktuelle Passwort beizubehalten.</p>
-                    </div>
                 </div>
             </div>
-            <div class="modal-footer" id="adminFooter" style="display: none;">
+            <div class="modal-footer" id="adminFooter">
                 <button class="btn btn-secondary" onclick="closeAdminModal()">Abbrechen</button>
                 <button class="btn btn-primary" onclick="saveAdminSettings()">Speichern</button>
             </div>
@@ -1174,7 +1278,29 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
 
         const RISIKEN = ['Dekubitus', 'Sturz', 'Inkontinenz', 'Schmerz', 'Ernährung', 'Sonstiges'];
 
-        let isAuthenticated = false;
+        // ============================================
+        // Appwrite (Auth + Datenbank)
+        // ============================================
+
+        const APPWRITE = {
+            endpoint:     'https://fra.cloud.appwrite.io/v1',
+            projectId:    '6a3bfb59000cc80cbacd',
+            databaseId:   '6a3bfe100031c0e248d8',
+            collectionId: 'bewohnerin'
+        };
+
+        let aClient = null, account = null, databases = null, AW = null;
+        if (typeof Appwrite !== 'undefined') {
+            const { Client, Account, Databases, ID, Permission, Role, Query } = Appwrite;
+            aClient = new Client().setEndpoint(APPWRITE.endpoint).setProject(APPWRITE.projectId);
+            account = new Account(aClient);
+            databases = new Databases(aClient);
+            AW = { ID, Permission, Role, Query };
+        }
+
+        let currentUser = null;
+        let activePatientId = null;
+        let suppressAutosave = false;
         let autosaveTimeout = null;
 
         // ============================================
@@ -1183,14 +1309,196 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
 
         document.addEventListener('DOMContentLoaded', () => {
             initRisikoTable();
-            loadSavedData();
             setupAutosave();
             checkApiKeyStatus();
 
             // Set default date to today
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('interviewDate').value = today;
+            document.getElementById('interviewDate').value = new Date().toISOString().split('T')[0];
+
+            bootstrapAuth();
         });
+
+        // ============================================
+        // Authentication
+        // ============================================
+
+        async function bootstrapAuth() {
+            if (!account) {
+                document.getElementById('authError').textContent = 'Appwrite-SDK konnte nicht geladen werden. Bitte Seite neu laden.';
+                return;
+            }
+            try {
+                currentUser = await account.get();
+                await onAuthenticated();
+            } catch (e) {
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            currentUser = null;
+            document.getElementById('authOverlay').classList.add('visible');
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('headerUser').textContent = '';
+        }
+
+        async function onAuthenticated() {
+            document.getElementById('authOverlay').classList.remove('visible');
+            document.getElementById('logoutBtn').style.display = '';
+            document.getElementById('headerUser').textContent = currentUser.email || '';
+            await loadPatients();
+        }
+
+        async function doLogin(event) {
+            event.preventDefault();
+            if (!account) return false;
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+            const errEl = document.getElementById('authError');
+            errEl.textContent = '';
+            btn.disabled = true;
+            try {
+                try { await account.deleteSession('current'); } catch (_) {}
+                await account.createEmailPasswordSession(email, password);
+                currentUser = await account.get();
+                document.getElementById('loginPassword').value = '';
+                await onAuthenticated();
+                showToast('Willkommen zurück', 'success');
+            } catch (e) {
+                errEl.textContent = e?.message || 'Anmeldung fehlgeschlagen.';
+            } finally {
+                btn.disabled = false;
+            }
+            return false;
+        }
+
+        async function logout() {
+            try { await account.deleteSession('current'); } catch (_) {}
+            activePatientId = null;
+            clearFormFields();
+            document.getElementById('patientSelect').innerHTML = '';
+            showLogin();
+            showToast('Abgemeldet', 'info');
+        }
+
+        // ============================================
+        // Bewohner-Verwaltung (Appwrite Datenbank)
+        // ============================================
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function clearFormFields() {
+            document.querySelectorAll('#appMain input[type="text"], #appMain input[type="date"], #appMain textarea').forEach(el => { el.value = ''; });
+            document.querySelectorAll('.risiko-table input').forEach(el => { el.checked = false; });
+        }
+
+        async function loadPatients() {
+            const select = document.getElementById('patientSelect');
+            try {
+                const res = await databases.listDocuments(APPWRITE.databaseId, APPWRITE.collectionId, [
+                    AW.Query.orderDesc('$updatedAt'),
+                    AW.Query.limit(100)
+                ]);
+                const docs = res.documents || [];
+                if (docs.length === 0) {
+                    await newPatient();
+                    return;
+                }
+                select.innerHTML = docs.map(d => `<option value="${d.$id}">${escapeHtml(d.name || 'Unbenannt')}</option>`).join('');
+                await selectPatient(docs[0].$id);
+            } catch (e) {
+                showToast(`Laden fehlgeschlagen: ${e.message}`, 'error');
+            }
+        }
+
+        async function selectPatient(id) {
+            try {
+                const doc = await databases.getDocument(APPWRITE.databaseId, APPWRITE.collectionId, id);
+                activePatientId = id;
+                document.getElementById('patientSelect').value = id;
+                suppressAutosave = true;
+                clearFormFields();
+                document.getElementById('interviewDate').value = new Date().toISOString().split('T')[0];
+                if (doc.data) {
+                    try { restoreFormData(JSON.parse(doc.data)); } catch (_) {}
+                }
+                suppressAutosave = false;
+                document.getElementById('resultSection').classList.remove('visible');
+            } catch (e) {
+                showToast(`Bewohner:in konnte nicht geladen werden: ${e.message}`, 'error');
+            }
+        }
+
+        function onPatientSelectChange() {
+            const id = document.getElementById('patientSelect').value;
+            if (id) selectPatient(id);
+        }
+
+        async function newPatient() {
+            if (!currentUser) return;
+            try {
+                const perms = [
+                    AW.Permission.read(AW.Role.user(currentUser.$id)),
+                    AW.Permission.update(AW.Role.user(currentUser.$id)),
+                    AW.Permission.delete(AW.Role.user(currentUser.$id))
+                ];
+                suppressAutosave = true;
+                clearFormFields();
+                document.getElementById('interviewDate').value = new Date().toISOString().split('T')[0];
+                suppressAutosave = false;
+                const payload = { name: 'Neue:r Bewohner:in', data: JSON.stringify(collectFormData()) };
+                const doc = await databases.createDocument(APPWRITE.databaseId, APPWRITE.collectionId, AW.ID.unique(), payload, perms);
+                activePatientId = doc.$id;
+                const select = document.getElementById('patientSelect');
+                const opt = document.createElement('option');
+                opt.value = doc.$id;
+                opt.textContent = doc.name;
+                select.prepend(opt);
+                select.value = doc.$id;
+                document.getElementById('resultSection').classList.remove('visible');
+                showToast('Neue:r Bewohner:in angelegt', 'success');
+                document.getElementById('patientName').focus();
+            } catch (e) {
+                showToast(`Anlegen fehlgeschlagen: ${e.message}`, 'error');
+            }
+        }
+
+        async function saveActivePatient(explicit) {
+            if (!currentUser || !activePatientId) {
+                if (explicit) showToast('Kein:e Bewohner:in ausgewählt', 'error');
+                return;
+            }
+            const formData = collectFormData();
+            const name = (formData.meta.patientName || '').trim() || 'Unbenannt';
+            try {
+                await databases.updateDocument(APPWRITE.databaseId, APPWRITE.collectionId, activePatientId, {
+                    name,
+                    data: JSON.stringify(formData)
+                });
+                const opt = document.querySelector(`#patientSelect option[value="${activePatientId}"]`);
+                if (opt) opt.textContent = name;
+                if (explicit) showToast('Gespeichert', 'success');
+                else showAutosaveIndicator();
+            } catch (e) {
+                if (explicit) showToast(`Speichern fehlgeschlagen: ${e.message}`, 'error');
+            }
+        }
+
+        async function deleteActivePatient() {
+            if (!activePatientId) return;
+            if (!confirm('Diese:n Bewohner:in wirklich löschen? Alle erfassten Daten gehen verloren.')) return;
+            try {
+                await databases.deleteDocument(APPWRITE.databaseId, APPWRITE.collectionId, activePatientId);
+                activePatientId = null;
+                showToast('Gelöscht', 'info');
+                await loadPatients();
+            } catch (e) {
+                showToast(`Löschen fehlgeschlagen: ${e.message}`, 'error');
+            }
+        }
 
         // ============================================
         // Risiko Matrix Table
@@ -1232,23 +1540,8 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
         }
 
         // ============================================
-        // Local Storage & Autosave
+        // Form data collection & Autosave
         // ============================================
-
-        function saveToLocalStorage() {
-            const data = collectFormData();
-            localStorage.setItem('sis_form_data', JSON.stringify(data));
-            showAutosaveIndicator();
-        }
-
-        function loadSavedData() {
-            // Load form data
-            const savedData = localStorage.getItem('sis_form_data');
-            if (savedData) {
-                const data = JSON.parse(savedData);
-                restoreFormData(data);
-            }
-        }
 
         function collectFormData() {
             const data = {
@@ -1325,16 +1618,15 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
         }
 
         function setupAutosave() {
-            const inputs = document.querySelectorAll('input, textarea');
+            const inputs = document.querySelectorAll('#appMain input, #appMain textarea');
             inputs.forEach(input => {
-                input.addEventListener('input', () => {
+                const handler = () => {
+                    if (suppressAutosave || !activePatientId) return;
                     clearTimeout(autosaveTimeout);
-                    autosaveTimeout = setTimeout(saveToLocalStorage, 1000);
-                });
-                input.addEventListener('change', () => {
-                    clearTimeout(autosaveTimeout);
-                    autosaveTimeout = setTimeout(saveToLocalStorage, 500);
-                });
+                    autosaveTimeout = setTimeout(() => saveActivePatient(false), 900);
+                };
+                input.addEventListener('input', handler);
+                input.addEventListener('change', handler);
             });
         }
 
@@ -1350,61 +1642,18 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
 
         function openAdminModal() {
             document.getElementById('adminModal').classList.add('visible');
-            document.getElementById('adminPassword').value = '';
-            document.getElementById('adminPassword').focus();
-
-            // Check if already authenticated in this session
-            if (isAuthenticated) {
-                showAdminContent();
-            } else {
-                document.getElementById('passwordSection').style.display = 'block';
-                document.getElementById('adminContent').classList.remove('visible');
-                document.getElementById('adminFooter').style.display = 'none';
-            }
+            const systemPrompt = localStorage.getItem('sis_system_prompt') || DEFAULT_SYSTEM_PROMPT;
+            document.getElementById('systemPrompt').value = systemPrompt;
         }
 
         function closeAdminModal() {
             document.getElementById('adminModal').classList.remove('visible');
         }
 
-        function authenticateAdmin() {
-            const password = document.getElementById('adminPassword').value;
-            const storedPassword = localStorage.getItem('sis_admin_password') || 'admin123';
-
-            if (password === storedPassword) {
-                isAuthenticated = true;
-                showAdminContent();
-                showToast('Erfolgreich angemeldet', 'success');
-            } else {
-                showToast('Falsches Passwort', 'error');
-                document.getElementById('adminPassword').value = '';
-                document.getElementById('adminPassword').focus();
-            }
-        }
-
-        function showAdminContent() {
-            document.getElementById('passwordSection').style.display = 'none';
-            document.getElementById('adminContent').classList.add('visible');
-            document.getElementById('adminFooter').style.display = 'flex';
-
-            // Load current settings (API-Key liegt serverseitig, nicht mehr im Client)
-            const systemPrompt = localStorage.getItem('sis_system_prompt') || DEFAULT_SYSTEM_PROMPT;
-            document.getElementById('systemPrompt').value = systemPrompt;
-        }
-
         function saveAdminSettings() {
             const systemPrompt = document.getElementById('systemPrompt').value.trim() || DEFAULT_SYSTEM_PROMPT;
-            const newPassword = document.getElementById('newAdminPassword').value;
-
             localStorage.setItem('sis_system_prompt', systemPrompt);
-
-            if (newPassword) {
-                localStorage.setItem('sis_admin_password', newPassword);
-                showToast('Einstellungen und Passwort gespeichert', 'success');
-            } else {
-                showToast('Einstellungen gespeichert', 'success');
-            }
-
+            showToast('Einstellungen gespeichert', 'success');
             closeAdminModal();
         }
 
@@ -1423,33 +1672,6 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
         function toggleThemenfeld(header) {
             const card = header.closest('.themenfeld-card');
             card.classList.toggle('collapsed');
-        }
-
-        function clearForm() {
-            if (confirm('Möchten Sie wirklich alle Eingaben löschen?')) {
-                // Clear all inputs
-                document.querySelectorAll('input[type="text"], input[type="date"], textarea').forEach(el => {
-                    if (el.id !== 'apiKey' && el.id !== 'systemPrompt' && el.id !== 'adminPassword' && el.id !== 'newAdminPassword') {
-                        el.value = '';
-                    }
-                });
-
-                // Clear radio buttons and checkboxes
-                document.querySelectorAll('.risiko-table input').forEach(el => {
-                    el.checked = false;
-                });
-
-                // Clear result
-                document.getElementById('resultSection').classList.remove('visible');
-
-                // Clear localStorage form data
-                localStorage.removeItem('sis_form_data');
-
-                // Set default date
-                document.getElementById('interviewDate').value = new Date().toISOString().split('T')[0];
-
-                showToast('Formular wurde geleert', 'info');
-            }
         }
 
         // ============================================
