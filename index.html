@@ -493,6 +493,7 @@
             box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
         }
         .risiko-freetext::placeholder { color: var(--ink-faint); }
+        .risiko-head-input { text-transform: none; letter-spacing: normal; font-weight: 500; }
 
         /* ===== Action buttons ===== */
         .action-section {
@@ -1140,7 +1141,7 @@
                             <th>Inkontinenz</th>
                             <th>Schmerz</th>
                             <th>Ernährung</th>
-                            <th>Sonstiges</th>
+                            <th><input type="text" id="sonstigesLabel" class="risiko-freetext risiko-head-input" placeholder="Sonstiges …"></th>
                         </tr>
                     </thead>
                     <tbody id="risikoTableBody">
@@ -1532,31 +1533,7 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
                 html += `
                     <tr>
                         <td>${tfIndex + 1}. ${themenfeld}</td>
-                        ${RISIKEN.map((risiko, rIndex) => {
-                            if (risiko === 'Sonstiges') {
-                                return `
-                            <td>
-                                <input type="text" class="risiko-freetext" name="sonstiges_${tfIndex}" placeholder="Welches Phänomen?">
-                                <div class="risiko-options" style="margin-top: 0.4rem;">
-                                    <label class="risiko-option">
-                                        <input type="radio" name="risiko_${tfIndex}_${rIndex}" value="ja">
-                                        <span>Ja</span>
-                                    </label>
-                                    <label class="risiko-option">
-                                        <input type="radio" name="risiko_${tfIndex}_${rIndex}" value="nein">
-                                        <span>Nein</span>
-                                    </label>
-                                </div>
-                                <div class="risiko-checkbox" style="margin-top: 0.3rem;">
-                                    <label class="risiko-option">
-                                        <input type="checkbox" name="weitere_${tfIndex}_${rIndex}">
-                                        <span style="font-size: 0.65rem;">Weitere Einschätzung</span>
-                                    </label>
-                                </div>
-                            </td>
-                                `;
-                            }
-                            return `
+                        ${RISIKEN.map((risiko, rIndex) => `
                             <td>
                                 <div class="risiko-options">
                                     <label class="risiko-option">
@@ -1575,8 +1552,7 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
                                     </label>
                                 </div>
                             </td>
-                            `;
-                        }).join('')}
+                        `).join('')}
                     </tr>
                 `;
             });
@@ -1598,7 +1574,8 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
                 },
                 oTon: document.getElementById('oTon').value,
                 themenfelder: {},
-                risiken: {}
+                risiken: {},
+                sonstigesLabel: (document.getElementById('sonstigesLabel')?.value || '')
             };
 
             // Collect Themenfelder
@@ -1614,15 +1591,10 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
                     const checkboxName = `weitere_${tfIndex}_${rIndex}`;
                     const selectedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
                     const checkbox = document.querySelector(`input[name="${checkboxName}"]`);
-                    const entry = {
+                    data.risiken[tfIndex][rIndex] = {
                         value: selectedRadio ? selectedRadio.value : null,
                         weitere: checkbox ? checkbox.checked : false
                     };
-                    if (risiko === 'Sonstiges') {
-                        const txt = document.querySelector(`input[name="sonstiges_${tfIndex}"]`);
-                        entry.text = txt ? txt.value : '';
-                    }
-                    data.risiken[tfIndex][rIndex] = entry;
                 });
             });
 
@@ -1649,15 +1621,16 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
                 }
             }
 
+            if (typeof data.sonstigesLabel === 'string') {
+                const lbl = document.getElementById('sonstigesLabel');
+                if (lbl) lbl.value = data.sonstigesLabel;
+            }
+
             if (data.risiken) {
                 Object.keys(data.risiken).forEach(tfIndex => {
                     Object.keys(data.risiken[tfIndex]).forEach(rIndex => {
                         const risikoData = data.risiken[tfIndex][rIndex];
                         if (!risikoData) return;
-                        if (typeof risikoData.text === 'string') {
-                            const txt = document.querySelector(`input[name="sonstiges_${tfIndex}"]`);
-                            if (txt) txt.value = risikoData.text;
-                        }
                         if (risikoData.value) {
                             const radio = document.querySelector(`input[name="risiko_${tfIndex}_${rIndex}"][value="${risikoData.value}"]`);
                             if (radio) radio.checked = true;
@@ -1809,8 +1782,10 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
 
             // Risikomatrix
             message += '## Risikomatrix\n\n';
-            message += '| Themenfeld | Dekubitus | Sturz | Inkontinenz | Schmerz | Ernährung | Sonstiges |\n';
-            message += '|------------|-----------|-------|-------------|---------|-----------|----------|\n';
+            const sonstigesLabel = (formData.sonstigesLabel || '').trim().replace(/\r?\n/g, ' ').replace(/\|/g, '/');
+            const headerCols = RISIKEN.map(r => (r === 'Sonstiges' && sonstigesLabel) ? `Sonstiges (${sonstigesLabel})` : r);
+            message += '| Themenfeld | ' + headerCols.join(' | ') + ' |\n';
+            message += '|' + ' --- |'.repeat(headerCols.length + 1) + '\n';
 
             THEMENFELDER.forEach((tf, tfIndex) => {
                 let row = `| ${tfIndex + 1}. ${tf} |`;
@@ -1818,10 +1793,6 @@ Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
                     const risiko = formData.risiken[tfIndex]?.[rIndex];
                     let cell = risiko?.value || '-';
                     if (risiko?.weitere) cell += ' (!)';
-                    if (risikoName === 'Sonstiges') {
-                        const t = (risiko?.text || '').trim();
-                        if (t) cell = `${t}: ${cell}`;
-                    }
                     cell = cell.replace(/\r?\n/g, ' ').replace(/\|/g, '/');
                     row += ` ${cell} |`;
                 });
