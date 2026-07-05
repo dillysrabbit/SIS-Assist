@@ -597,9 +597,19 @@ function dictState(mode){
 function hasRecorder(){
   return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && typeof MediaRecorder!=='undefined');
 }
+var sttTimer=null, sttActive=false;
 function startDictation(){
   if(S.screen!=='edit'||dictMode) return;
   pttHeld=true;
+  /* Weg 0 (r1-nativ): rabbitOS-STT über CreationVoiceHandler,
+     Transkript kommt als {type:'sttEnded', transcript} via onPluginMessage */
+  if(typeof CreationVoiceHandler!=='undefined'){
+    try{
+      CreationVoiceHandler.postMessage('start');
+      sttActive=true; dictState('rec');
+      return;
+    }catch(e){ sttActive=false; }
+  }
   if(hasRecorder()) startRecorder();
   else startSR();
 }
@@ -658,6 +668,15 @@ function startSR(){
 }
 function stopDictation(){
   pttHeld=false;
+  if(sttActive){
+    sttActive=false;
+    try{ CreationVoiceHandler.postMessage('stop'); }catch(e){}
+    dictState('proc');
+    /* Sicherheitsnetz: falls kein sttEnded eintrifft */
+    clearTimeout(sttTimer);
+    sttTimer=setTimeout(function(){ if(dictMode==='proc') dictState(''); },10000);
+    return;
+  }
   if(recog){ try{ recog.stop(); }catch(e){} recog=null; dictState(''); return; }
   if(recorder && recorder.state==='recording'){ try{ recorder.stop(); }catch(e){ recorder=null; dictState(''); } return; }
   if(dictMode==='rec') dictState('');
@@ -817,14 +836,21 @@ function planFail(msg){
   render(); flash('FEHLER: '+esc(msg).toUpperCase().slice(0,60));
 }
 
-/* rabbitOS-Nachrichten: LLM-Antwort oder Diktat in den Editor */
+/* rabbitOS-Nachrichten: STT-Transkript (sttEnded) oder LLM-Antwort */
 window.onPluginMessage=function(e){
+  var d=e;
+  if(typeof e==='string'){ try{ d=JSON.parse(e); }catch(_){ d=e; } }
+  /* Diktat: natives Speech-to-Text des Geräts */
+  if(d && d.type==='sttEnded'){
+    clearTimeout(sttTimer);
+    var t=String(d.transcript||'').trim();
+    dictState('');
+    if(t && S.screen==='edit') dictate(t);
+    return;
+  }
   var text='';
-  try{
-    var d=(typeof e==='string')?JSON.parse(e):e;
-    if(typeof d==='string') text=d;
-    else if(d){ text=d.message||d.data||d.text||''; if(typeof text!=='string') text=JSON.stringify(text); }
-  }catch(_){ text=String(e||''); }
+  if(typeof d==='string') text=d;
+  else if(d){ text=d.message||d.data||d.text||''; if(typeof text!=='string') text=JSON.stringify(text); }
   if(!text) return;
   if(S.busy){ planDone(text); return; }
   if(S.screen==='edit'){ dictate(text); }
