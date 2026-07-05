@@ -66,6 +66,10 @@ body{
 }
 #head .brand{font-size:13px;font-weight:700;letter-spacing:-.01em;cursor:pointer;user-select:none}
 #head .brand sup{font-size:7px;vertical-align:super}
+#bk{
+  font-family:var(--mono);font-size:17px;line-height:1;color:var(--ac);
+  cursor:pointer;user-select:none;padding:6px 8px 6px 0;visibility:hidden;
+}
 #head .scr{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
 
 /* ---- Inhalt ---- */
@@ -221,7 +225,10 @@ body{
 
 <div id="stage">
   <div id="head">
-    <span class="brand" id="brand">SIS<sup>®</sup>&nbsp;Assist</span>
+    <span style="display:flex;align-items:center">
+      <span id="bk">‹</span>
+      <span class="brand" id="brand">SIS<sup>®</sup>&nbsp;Assist</span>
+    </span>
     <span class="scr" id="scrlab">START</span>
   </div>
   <div id="main"></div>
@@ -446,6 +453,7 @@ function flash(msg){
 
 function render(){
   clearTimeout(S.hintTimer);
+  document.getElementById('bk').style.visibility=(S.screen==='home')?'hidden':'visible';
   if(S.screen!=='edit'){ kb.blur(); }
   if(S.screen==='home') renderList('START', homeItems(), '<b>Rad</b>&nbsp;wählen&nbsp;·&nbsp;<b>Taste</b>&nbsp;öffnen');
   else if(S.screen==='meta') renderList('STAMMDATEN', metaItems(), '<b>Rad</b>&nbsp;wählen&nbsp;·&nbsp;<b>Taste</b>&nbsp;öffnen');
@@ -732,24 +740,36 @@ function cycleCell(n){
 }
 
 /* ---- Plan ---- */
+function planItems(){
+  var items=[
+    {id:'back', lab:'‹ Zurück', back:true},
+    {id:'gen', idx:'▸', lab:'Plan erstellen'}
+  ];
+  if(D.plan) items.push({id:'last', idx:'≡', lab:'Letzter Plan anzeigen'});
+  return items;
+}
 function renderPlan(){
   scrlab.textContent='MASSNAHMENPLAN';
   var tfN=0; for(var i=1;i<=6;i++) if(D['tf'+i]) tfN++;
-  main.innerHTML='<div class="pane" id="pane"><div class="sum">'
+  var html='<div class="pane" id="pane"><div class="sum" style="padding-bottom:8px">'
     +'<div class="li"><span>STAMMDATEN</span><b>'+metaCount()+'</b></div>'
     +'<div class="li"><span>O-TON</span><b>'+(D.oTon?'erfasst':'—')+'</b></div>'
     +'<div class="li"><span>THEMENFELDER</span><b>'+tfN+'/6</b></div>'
     +'<div class="li"><span>RISIKEN MARKIERT</span><b>'+riskCount()+'</b></div>'
-    +(D.plan?'<div class="li"><span>LETZTER PLAN</span><b>vorhanden</b></div>':'')
-    +'</div></div>'
-    +'<div id="action">'
-    +(D.plan?'<div class="btn-s" id="btn-last">≡</div>':'')
-    +'<div class="btn-p" id="btn-gen">Plan erstellen</div>'
     +'</div>';
-  hint('<b>Taste</b>&nbsp;erstellen'+(D.plan?'&nbsp;·&nbsp;<b>≡</b>&nbsp;letzter Plan':''));
-  document.getElementById('btn-gen').addEventListener('click',generatePlan);
-  var bl=document.getElementById('btn-last');
-  if(bl) bl.addEventListener('click',function(){ S.screen='result'; render(); });
+  planItems().forEach(function(it,i){
+    html+='<div class="row'+(i===S.sel?' on':'')+(it.back?' back':'')+'" data-i="'+i+'">'
+        +(it.idx?'<span class="idx">'+it.idx+'</span>':'')
+        +'<span class="lab">'+esc(it.lab)+'</span>'
+        +'</div>';
+  });
+  html+='</div>';
+  main.innerHTML=html;
+  hint('<b>Rad</b>&nbsp;wählen&nbsp;·&nbsp;<b>Taste</b>&nbsp;bestätigen');
+  main.querySelectorAll('.row').forEach(function(r){
+    r.addEventListener('click',function(){ S.sel=+r.getAttribute('data-i'); confirmAction(); });
+  });
+  scrollSelIntoView();
 }
 
 function renderResult(){
@@ -881,6 +901,7 @@ function listLen(){
   if(S.screen==='meta') return metaItems().length;
   if(S.screen==='bew') return bewItems().length;
   if(S.screen==='bewopt') return bewOptItems().length;
+  if(S.screen==='plan') return planItems().length;
   return 0;
 }
 function wheel(dir){
@@ -892,7 +913,6 @@ function wheel(dir){
   if(S.screen==='risiko'){
     S.cell=(S.cell+dir+37)%37; renderRisiko(); return;
   }
-  if(S.screen==='plan') return;
   var n=listLen(); if(!n) return;
   S.delArm=false;
   S.sel=(S.sel+dir+n)%n; render();
@@ -904,7 +924,7 @@ function confirmAction(){
     if(it.id==='bew'){ S.homeSel=S.sel; S.screen='bew'; S.sel=1; render(); }
     else if(it.id==='meta'){ S.homeSel=S.sel; S.screen='meta'; S.sel=1; render(); }
     else if(it.id==='risiko'){ S.homeSel=S.sel; S.screen='risiko'; S.cell=0; render(); }
-    else if(it.id==='plan'){ S.homeSel=S.sel; S.screen='plan'; render(); }
+    else if(it.id==='plan'){ S.homeSel=S.sel; S.screen='plan'; S.sel=1; render(); }
     else { S.homeSel=S.sel; openEdit(it.id); }
   }
   else if(S.screen==='meta'){
@@ -942,14 +962,19 @@ function confirmAction(){
   else if(S.screen==='risiko'){
     if(S.cell===36){ back(); } else cycleCell(S.cell);
   }
-  else if(S.screen==='plan'){ generatePlan(); }
-  else if(S.screen==='result'){ S.screen='plan'; render(); }
+  else if(S.screen==='plan'){
+    var pl=planItems()[S.sel];
+    if(pl.id==='back'){ back(); }
+    else if(pl.id==='gen'){ generatePlan(); }
+    else { S.screen='result'; render(); }
+  }
+  else if(S.screen==='result'){ S.screen='plan'; S.sel=1; render(); }
 }
 function back(){
   if(S.busy) return;
   S.delArm=false;
   if(S.screen==='edit'){ closeEdit(); return; }
-  if(S.screen==='result'){ S.screen='plan'; render(); return; }
+  if(S.screen==='result'){ S.screen='plan'; S.sel=1; render(); return; }
   if(S.screen==='bewopt'){ S.screen='bew'; S.sel=1; render(); return; }
   if(S.screen!=='home'){ S.screen='home'; S.sel=S.homeSel||0; render(); return; }
 }
@@ -981,6 +1006,7 @@ window.addEventListener('wheel',function(e){
   if(Math.abs(wheelAcc)>40){ wheel(wheelAcc>0?1:-1); wheelAcc=0; }
 },{passive:true});
 document.getElementById('brand').addEventListener('click',back);
+document.getElementById('bk').addEventListener('click',back);
 
 /* Start */
 load(function(){
