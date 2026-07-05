@@ -336,11 +336,22 @@ function save(){
     }catch(e){}
   },300);
 }
+/* "STT started"-Artefakte aus früheren Diktaten entfernen */
+function stripSttNoise(s){
+  return String(s||'')
+    .replace(/[ \t]*\bSTT[ \t]+(?:started|stopped|ended)\b\.?[ \t]*/gi,' ')
+    .replace(/[ \t]{2,}/g,' ')
+    .replace(/[ \t]+\n/g,'\n')
+    .replace(/\n[ \t]+/g,'\n')
+    .replace(/^\s+|\s+$/g,'');
+}
+var TEXT_KEYS=['patientName','birthDate','interviewDate','nurseSign','oTon','tf1','tf2','tf3','tf4','tf5','tf6'];
 /* Datensatz gegen das Soll-Schema normalisieren */
 function normRecord(o){
   var b=blankData();
   if(o) for(var k in b) if(o[k]!==undefined) b[k]=o[k];
   b.rid=(o&&o.rid)||newId();
+  TEXT_KEYS.forEach(function(k){ b[k]=stripSttNoise(b[k]); });
   return b;
 }
 function load(cb){
@@ -836,7 +847,10 @@ function planFail(msg){
   render(); flash('FEHLER: '+esc(msg).toUpperCase().slice(0,60));
 }
 
-/* rabbitOS-Nachrichten: STT-Transkript (sttEnded) oder LLM-Antwort */
+/* rabbitOS-Nachrichten: STT-Transkript (sttEnded) oder LLM-Antwort.
+   Wichtig: rabbitOS sendet auch Status-Meldungen wie "STT started" —
+   ins Feld darf ausschließlich das Transkript aus sttEnded. */
+function isSttNoise(t){ return /^\s*stt\s+(started|stopped|ended|error)\s*\.?\s*$/i.test(t); }
 window.onPluginMessage=function(e){
   var d=e;
   if(typeof e==='string'){ try{ d=JSON.parse(e); }catch(_){ d=e; } }
@@ -845,15 +859,18 @@ window.onPluginMessage=function(e){
     clearTimeout(sttTimer);
     var t=String(d.transcript||'').trim();
     dictState('');
-    if(t && S.screen==='edit') dictate(t);
+    if(t && !isSttNoise(t) && S.screen==='edit') dictate(t);
     return;
   }
+  /* andere getypte Ereignisse (sttStarted, …) sind Status — ignorieren */
+  if(d && typeof d==='object' && d.type) return;
   var text='';
   if(typeof d==='string') text=d;
   else if(d){ text=d.message||d.data||d.text||''; if(typeof text!=='string') text=JSON.stringify(text); }
-  if(!text) return;
+  if(!text || isSttNoise(text)) return;
+  /* Nur noch die LLM-Antwort für den Maßnahmenplan wird angenommen —
+     Freitext-Nachrichten sind KEIN Diktat (das kommt allein via sttEnded) */
   if(S.busy){ planDone(text); return; }
-  if(S.screen==='edit'){ dictate(text); }
 };
 
 /* ==========================================================
