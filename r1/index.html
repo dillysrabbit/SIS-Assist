@@ -531,21 +531,70 @@ function oskPress(k){
   if(k==='123'){ S.layer='123'; renderEdit(); return; }
   if(k==='ABC'){ S.layer='abc'; renderEdit(); return; }
   if(k==='OKK'){ S.kbVis=false; renderEdit(); return; }
-  if(k==='BS'){ kb.value=kb.value.slice(0,-1); syncEdit(); return; }
+  if(k==='BS'){ backspaceAtCaret(); return; }
   var ch = k==='SP'?' ' : (k==='NL'?'\n':k);
   if(ch==='\n' && !FIELDS[S.editKey].multi) return;
   if(S.shift && ch.length===1){ ch=ch.toUpperCase(); S.shift=false; renderEdit(); }
-  kb.value+=ch; syncEdit();
+  insertAtCaret(ch);
+}
+/* ---- Cursor: S.caret = Zeichenposition in kb.value ---- */
+function caretPos(){ return Math.max(0,Math.min((kb.value||'').length,S.caret==null?(kb.value||'').length:S.caret)); }
+function setKbSel(){ try{ kb.selectionStart=kb.selectionEnd=caretPos(); }catch(e){} }
+function renderEdText(){
+  var el=document.getElementById('edtext'); if(el==null||S.screen!=='edit') return;
+  var v=kb.value||'', f=FIELDS[S.editKey];
+  if(!v){
+    el.innerHTML='<span class="caret" id="edcaret"></span><span class="ph">'+esc(f.ph)+'</span>';
+  }else{
+    var c=caretPos();
+    el.innerHTML='<span id="edpre">'+esc(v.slice(0,c))+'</span>'
+      +'<span class="caret" id="edcaret"></span>'
+      +'<span id="edpost">'+esc(v.slice(c))+'</span>';
+  }
+  var ce=document.getElementById('edcaret');
+  if(ce&&ce.scrollIntoView) ce.scrollIntoView({block:'nearest'});
+}
+function insertAtCaret(t){
+  var v=kb.value||'', c=caretPos();
+  kb.value=v.slice(0,c)+t+v.slice(c);
+  S.caret=c+t.length; setKbSel();
+  syncEdit();
+}
+function backspaceAtCaret(){
+  var v=kb.value||'', c=caretPos();
+  if(!c) return;
+  kb.value=v.slice(0,c-1)+v.slice(c);
+  S.caret=c-1; setKbSel();
+  syncEdit();
+}
+function moveCaret(dir){
+  S.caret=Math.max(0,Math.min((kb.value||'').length,caretPos()+dir));
+  setKbSel();
+  renderEdText();
+}
+/* Tippen in den Text setzt den Cursor an die getroffene Stelle */
+function placeCaretFromPoint(x,y){
+  if(!document.caretRangeFromPoint) return false;
+  var r=document.caretRangeFromPoint(x,y);
+  if(!r) return false;
+  var n=r.startContainer, off=r.startOffset;
+  var pre=document.getElementById('edpre'), post=document.getElementById('edpost');
+  if(pre&&n===pre.firstChild) S.caret=off;
+  else if(post&&n===post.firstChild) S.caret=pre.textContent.length+off;
+  else if(pre&&n===pre) S.caret=off?pre.textContent.length:0;
+  else if(post&&n===post) S.caret=pre.textContent.length+(off?post.textContent.length:0);
+  else return false;
+  setKbSel(); renderEdText();
+  return true;
 }
 function renderEdit(){
   var f=FIELDS[S.editKey];
   scrlab.textContent='EINGABE';
   var v=kb.value!==undefined&&S._edOpen ? kb.value : (D[S.editKey]||'');
-  var body=v?esc(v):'<span class="ph">'+esc(f.ph)+'</span>';
   var bottom=S.kbVis?113:34;
   main.innerHTML='<div class="pane" id="pane" style="bottom:'+bottom+'px">'
     +'<div class="ed-label" id="edlab">'+esc(f.label)+'</div>'
-    +'<div class="ed-text" id="edtext">'+body+'<span class="caret"></span></div>'
+    +'<div class="ed-text" id="edtext"></div>'
     +'</div>'
     +(S.kbVis
       ? oskHtml()
@@ -553,8 +602,8 @@ function renderEdit(){
         +'<div id="ed-abc" style="color:var(--ac)">⌨ ABC</div><div id="ed-ok">OK</div><div id="ed-clr" class="warn">Löschen</div>'
         +'</div>');
   hint(onR1()
-    ?'<b>PTT halten</b>&nbsp;diktieren&nbsp;·&nbsp;<b>ABC</b>&nbsp;tippen&nbsp;·&nbsp;<b>Taste</b>&nbsp;OK'
-    :'<b>Tippen</b>&nbsp;·&nbsp;<b>ABC</b>&nbsp;Tastatur&nbsp;·&nbsp;<b>Esc</b>&nbsp;OK');
+    ?'<b>PTT</b>&nbsp;diktieren&nbsp;·&nbsp;<b>Rad</b>&nbsp;Cursor&nbsp;·&nbsp;<b>Taste</b>&nbsp;OK'
+    :'<b>Tippen</b>&nbsp;·&nbsp;<b>Rad</b>&nbsp;Cursor&nbsp;·&nbsp;<b>Esc</b>&nbsp;OK');
   if(S.kbVis){
     document.getElementById('osk').addEventListener('click',function(e){
       var key=e.target.closest?e.target.closest('[data-k]'):null;
@@ -563,24 +612,40 @@ function renderEdit(){
   }else{
     document.getElementById('ed-abc').addEventListener('click',function(e){ e.stopPropagation(); S.kbVis=true; renderEdit(); });
     document.getElementById('ed-ok').addEventListener('click',function(e){ e.stopPropagation(); closeEdit(); });
-    document.getElementById('ed-clr').addEventListener('click',function(e){ e.stopPropagation(); kb.value=''; syncEdit(); });
+    document.getElementById('ed-clr').addEventListener('click',function(e){ e.stopPropagation(); kb.value=''; S.caret=0; setKbSel(); syncEdit(); });
   }
+  kb.value=v;
+  if(!S._edOpen) S.caret=v.length; /* beim Öffnen: Cursor ans Ende */
+  S._edOpen=true;
+  document.getElementById('edtext').addEventListener('click',function(e){
+    e.stopPropagation();
+    placeCaretFromPoint(e.clientX,e.clientY);
+    if(!S.kbVis){ try{ kb.focus(); setKbSel(); }catch(_){} }
+  });
   main.querySelector('.pane').addEventListener('click',function(){ if(!S.kbVis) kb.focus(); });
-  kb.value=v; S._edOpen=true;
-  if(!S.kbVis) setTimeout(function(){ try{ kb.focus(); }catch(e){} },50);
-  var p=main.querySelector('.pane'); p.scrollTop=p.scrollHeight;
+  if(!S.kbVis) setTimeout(function(){ try{ kb.focus(); setKbSel(); }catch(e){} },50);
+  renderEdText();
   dictState(dictMode);
 }
 function syncEdit(){
   if(S.screen!=='edit') return;
   D[S.editKey]=kb.value;
-  var f=FIELDS[S.editKey];
-  var el=document.getElementById('edtext');
-  if(el) el.innerHTML=(kb.value?esc(kb.value):'<span class="ph">'+esc(f.ph)+'</span>')+'<span class="caret"></span>';
-  var p=main.querySelector('.pane'); if(p) p.scrollTop=p.scrollHeight;
+  renderEdText();
   save();
 }
-kb.addEventListener('input',syncEdit);
+/* Desktop: Tastatur schreibt an der nativen Textarea-Position */
+kb.addEventListener('input',function(){
+  if(S.screen!=='edit') return;
+  S.caret=kb.selectionStart;
+  syncEdit();
+});
+kb.addEventListener('keyup',function(e){
+  if(S.screen!=='edit') return;
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Home'||e.key==='End'){
+    S.caret=kb.selectionStart;
+    renderEdText();
+  }
+});
 function openEdit(key){
   S.prev=S.screen; S.prevSel=S.sel; S.editKey=key; S.screen='edit'; render();
 }
@@ -593,9 +658,11 @@ function closeEdit(){
 }
 function dictate(text){
   if(!text) return;
-  var v=kb.value;
-  kb.value=v?(v.replace(/\s+$/,'')+' '+text):text;
-  syncEdit();
+  /* an der Cursor-Position einfügen, mit sauberen Wortgrenzen */
+  var v=kb.value||'', c=caretPos(), ins=text;
+  if(c>0 && !/\s/.test(v.charAt(c-1))) ins=' '+ins;
+  if(c<v.length && !/\s/.test(v.charAt(c))) ins=ins+' ';
+  insertAtCaret(ins);
 }
 
 /* ==========================================================
@@ -906,7 +973,8 @@ function listLen(){
 }
 function wheel(dir){
   if(S.busy) return;
-  if(S.screen==='edit' || S.screen==='result'){
+  if(S.screen==='edit'){ moveCaret(dir); return; }
+  if(S.screen==='result'){
     var p=main.querySelector('.pane'); if(p) p.scrollTop+=dir*24;
     return;
   }
