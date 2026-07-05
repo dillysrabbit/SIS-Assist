@@ -16,8 +16,27 @@ Werte, 4-px-Raster, 16-px-Rand, Kopf 40 px, Aktion 48 px, Radius 2 px.
 |---|---|
 | **Scrollrad** | Auswahl in Listen bewegen · Zelle in der Risikomatrix wählen · lange Texte lesen |
 | **Taste (kurz)** | Öffnen / Bestätigen · Risikozelle weiterschalten (– → J → J! → N → N! → –) · Plan erstellen |
-| **PTT halten** | Diktat in das geöffnete Eingabefeld (auf dem Gerät) |
+| **PTT halten** | Diktat in das geöffnete Eingabefeld (siehe „Diktat" unten) |
+| **⌨ ABC (im Editor)** | On-Screen-Tastatur (QWERTZ mit Umlauten, ⇧, 123-Ebene) — funktioniert immer per Touch |
 | **Wortmarke „SIS® Assist" (Kopfzeile)** | Zurück |
+
+## Diktat
+
+rabbitOS liefert PTT-Sprache **nicht** automatisch an Creations —
+`longPressStart`/`longPressEnd` sind reine Tasten-Events (so dokumentiert das
+offizielle [creations-sdk](https://github.com/rabbit-hmi-oss/creations-sdk)).
+Das Diktat ist daher zweistufig selbst gebaut; PTT gedrückt halten, sprechen,
+loslassen:
+
+1. **Web Speech API** des Webviews (`webkitSpeechRecognition`, de-DE) — wird
+   genutzt, falls das Gerät sie anbietet; Text erscheint direkt im Feld.
+2. **Aufnahme-Fallback:** Mikrofonaufnahme (`getUserMedia`/`MediaRecorder`),
+   Upload an `/api/transcribe` (OpenAI Whisper). Dafür muss in Vercel die
+   Umgebungsvariable **`OPENAI_API_KEY`** gesetzt sein — ohne Key meldet die
+   Funktion sauber „Diktat inaktiv".
+
+Steht keins von beidem zur Verfügung, sagt es die App im Fußbereich und die
+**⌨ ABC-Tastatur** bleibt der garantierte Eingabeweg.
 
 Desktop-Vorschau: `▲/▼` = Rad, `Enter` = Taste, `Esc` = Zurück, Tippen mit
 der Tastatur direkt ins geöffnete Feld.
