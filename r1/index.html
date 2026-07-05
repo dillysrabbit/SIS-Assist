@@ -129,6 +129,21 @@ body{
   margin-right:6px;animation:blink .8s step-start infinite;vertical-align:0;
 }
 
+/* ---- On-Screen-Tastatur ---- */
+.osk{
+  position:absolute;bottom:0;left:0;right:0;z-index:3;
+  background:var(--line);border-top:1px solid var(--line);
+  display:flex;flex-direction:column;gap:1px;padding-top:1px;
+}
+.osk .krow{display:flex;gap:1px}
+.osk .key{
+  flex:1;height:27px;display:flex;align-items:center;justify-content:center;
+  background:var(--sf);font-family:var(--mono);font-size:12px;color:var(--fg);
+  cursor:pointer;user-select:none;
+}
+.osk .key.fn{color:var(--ac);font-size:11px}
+.osk .key.on,.osk .key:active{background:var(--ac);color:var(--acf)}
+
 /* ---- Risikomatrix ---- */
 .grid{padding:8px 16px 4px}
 .g-head,.g-row{display:flex;gap:1px}
@@ -292,7 +307,8 @@ function removeResident(id){
 }
 
 /* Zustand */
-var S = { screen:'home', sel:0, editKey:null, cell:0, busy:false, hintTimer:null, bewId:null, delArm:false };
+var S = { screen:'home', sel:0, editKey:null, cell:0, busy:false, hintTimer:null,
+          bewId:null, delArm:false, kbVis:false, shift:false, layer:'abc' };
 
 /* ==========================================================
    Persistenz — creationStorage (r1) mit localStorage-Fallback
@@ -456,25 +472,85 @@ function scrollSelIntoView(){
 }
 
 /* ---- Editor ---- */
+function oskRows(){
+  var last=[['123',2],['ü',1],['SP',4],['.',1],['NL',1],['OKK',1]];
+  if(S.layer==='123'){
+    last=[['ABC',2],[',',1],['SP',4],['.',1],['NL',1],['OKK',1]];
+    return [
+      ['1','2','3','4','5','6','7','8','9','0'],
+      ['-','/',':',';','(',')','"','€','&','@'],
+      ['ß','?','!','\'','#','%','+','=','*',['BS',1]],
+      last
+    ];
+  }
+  return [
+    ['q','w','e','r','t','z','u','i','o','p'],
+    ['a','s','d','f','g','h','j','k','l','ö'],
+    [['SH',1],'y','x','c','v','b','n','m','ä',['BS',1]],
+    last
+  ];
+}
+var OSK_LABEL={SH:'⇧',BS:'⌫',SP:'␣',NL:'⏎',OKK:'✓','123':'123',ABC:'ABC'};
+function oskHtml(){
+  var h='<div class="osk" id="osk">';
+  oskRows().forEach(function(row){
+    h+='<div class="krow">';
+    row.forEach(function(key){
+      var k=key, span=1;
+      if(Object.prototype.toString.call(key)==='[object Array]'){ k=key[0]; span=key[1]; }
+      var fn=OSK_LABEL[k]!==undefined;
+      var lab=fn?OSK_LABEL[k]:(S.shift?k.toUpperCase():k);
+      var on=(k==='SH'&&S.shift)?' on':'';
+      h+='<div class="key'+(fn?' fn':'')+on+'" data-k="'+k+'" style="flex:'+span+'">'+lab+'</div>';
+    });
+    h+='</div>';
+  });
+  return h+'</div>';
+}
+function oskPress(k){
+  if(k==='SH'){ S.shift=!S.shift; renderEdit(); return; }
+  if(k==='123'){ S.layer='123'; renderEdit(); return; }
+  if(k==='ABC'){ S.layer='abc'; renderEdit(); return; }
+  if(k==='OKK'){ S.kbVis=false; renderEdit(); return; }
+  if(k==='BS'){ kb.value=kb.value.slice(0,-1); syncEdit(); return; }
+  var ch = k==='SP'?' ' : (k==='NL'?'\n':k);
+  if(ch==='\n' && !FIELDS[S.editKey].multi) return;
+  if(S.shift && ch.length===1){ ch=ch.toUpperCase(); S.shift=false; renderEdit(); }
+  kb.value+=ch; syncEdit();
+}
 function renderEdit(){
   var f=FIELDS[S.editKey];
   scrlab.textContent='EINGABE';
-  var v=D[S.editKey]||'';
+  var v=kb.value!==undefined&&S._edOpen ? kb.value : (D[S.editKey]||'');
   var body=v?esc(v):'<span class="ph">'+esc(f.ph)+'</span>';
-  main.innerHTML='<div class="pane" id="pane">'
+  var bottom=S.kbVis?113:34;
+  main.innerHTML='<div class="pane" id="pane" style="bottom:'+bottom+'px">'
     +'<div class="ed-label" id="edlab">'+esc(f.label)+'</div>'
     +'<div class="ed-text" id="edtext">'+body+'<span class="caret"></span></div>'
     +'</div>'
-    +'<div class="ed-tools" style="position:absolute;bottom:0;left:0;right:0">'
-    +'<div id="ed-ok">OK</div><div id="ed-clr" class="warn">Löschen</div>'
-    +'</div>';
-  hint(onR1()?'<b>PTT halten</b>&nbsp;diktieren&nbsp;·&nbsp;<b>Taste</b>&nbsp;OK':'<b>Tippen</b>&nbsp;·&nbsp;<b>Esc</b>&nbsp;OK');
-  document.getElementById('ed-ok').addEventListener('click',function(e){ e.stopPropagation(); closeEdit(); });
-  document.getElementById('ed-clr').addEventListener('click',function(e){ e.stopPropagation(); kb.value=''; syncEdit(); });
-  main.querySelector('.pane').addEventListener('click',function(){ kb.focus(); });
-  kb.value=v;
-  setTimeout(function(){ try{ kb.focus(); }catch(e){} },50);
+    +(S.kbVis
+      ? oskHtml()
+      : '<div class="ed-tools" style="position:absolute;bottom:0;left:0;right:0">'
+        +'<div id="ed-abc" style="color:var(--ac)">⌨ ABC</div><div id="ed-ok">OK</div><div id="ed-clr" class="warn">Löschen</div>'
+        +'</div>');
+  hint(onR1()
+    ?'<b>PTT halten</b>&nbsp;diktieren&nbsp;·&nbsp;<b>ABC</b>&nbsp;tippen&nbsp;·&nbsp;<b>Taste</b>&nbsp;OK'
+    :'<b>Tippen</b>&nbsp;·&nbsp;<b>ABC</b>&nbsp;Tastatur&nbsp;·&nbsp;<b>Esc</b>&nbsp;OK');
+  if(S.kbVis){
+    document.getElementById('osk').addEventListener('click',function(e){
+      var key=e.target.closest?e.target.closest('[data-k]'):null;
+      if(key) oskPress(key.getAttribute('data-k'));
+    });
+  }else{
+    document.getElementById('ed-abc').addEventListener('click',function(e){ e.stopPropagation(); S.kbVis=true; renderEdit(); });
+    document.getElementById('ed-ok').addEventListener('click',function(e){ e.stopPropagation(); closeEdit(); });
+    document.getElementById('ed-clr').addEventListener('click',function(e){ e.stopPropagation(); kb.value=''; syncEdit(); });
+  }
+  main.querySelector('.pane').addEventListener('click',function(){ if(!S.kbVis) kb.focus(); });
+  kb.value=v; S._edOpen=true;
+  if(!S.kbVis) setTimeout(function(){ try{ kb.focus(); }catch(e){} },50);
   var p=main.querySelector('.pane'); p.scrollTop=p.scrollHeight;
+  dictState(dictMode);
 }
 function syncEdit(){
   if(S.screen!=='edit') return;
@@ -490,7 +566,9 @@ function openEdit(key){
   S.prev=S.screen; S.prevSel=S.sel; S.editKey=key; S.screen='edit'; render();
 }
 function closeEdit(){
+  stopDictation();
   D[S.editKey]=kb.value; save();
+  S.kbVis=false; S.shift=false; S.layer='abc'; S._edOpen=false;
   S.screen=(S.prev==='meta')?'meta':'home';
   S.sel=S.prevSel||0; render();
 }
@@ -499,6 +577,90 @@ function dictate(text){
   var v=kb.value;
   kb.value=v?(v.replace(/\s+$/,'')+' '+text):text;
   syncEdit();
+}
+
+/* ==========================================================
+   Diktat — PTT halten
+   1) Web Speech API des Webviews (falls vorhanden)
+   2) Fallback: MediaRecorder → /api/transcribe (Whisper)
+   ========================================================== */
+var TRANSCRIBE_URL='https://sis-assist.vercel.app/api/transcribe';
+var recog=null, recorder=null, recChunks=[], dictMode='', pttHeld=false;
+function dictState(mode){
+  dictMode=mode||'';
+  var l=document.getElementById('edlab');
+  if(!l||S.screen!=='edit') return;
+  if(dictMode==='rec') l.innerHTML='<span class="rec"></span>AUFNAHME …';
+  else if(dictMode==='proc') l.innerHTML='VERARBEITE …';
+  else l.textContent=FIELDS[S.editKey].label;
+}
+function hasRecorder(){
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && typeof MediaRecorder!=='undefined');
+}
+function startDictation(){
+  if(S.screen!=='edit'||dictMode) return;
+  pttHeld=true;
+  if(hasRecorder()) startRecorder();
+  else startSR();
+}
+/* Weg 1 (Standard): aufnehmen solange PTT gehalten, dann Whisper */
+function startRecorder(){
+  dictState('rec'); /* sofortiges Feedback, noch vor der Mikrofon-Freigabe */
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    /* PTT wurde schon wieder losgelassen, bevor das Mikrofon bereit war */
+    if(!pttHeld){ stream.getTracks().forEach(function(t){ t.stop(); }); dictState(''); return; }
+    recChunks=[];
+    try{ recorder=new MediaRecorder(stream); }
+    catch(e){ stream.getTracks().forEach(function(t){t.stop();}); dictState(''); flash('MIKROFON NICHT VERFÜGBAR — ABC-TASTATUR NUTZEN'); return; }
+    recorder.ondataavailable=function(e){ if(e.data&&e.data.size) recChunks.push(e.data); };
+    recorder.onstop=function(){
+      stream.getTracks().forEach(function(t){ t.stop(); });
+      var blob=new Blob(recChunks,{type:(recorder&&recorder.mimeType)||'audio/webm'});
+      recorder=null;
+      if(blob.size<1000){ dictState(''); return; } /* zu kurz — nichts gesagt */
+      dictState('proc');
+      var fr=new FileReader();
+      fr.onload=function(){
+        var b64=String(fr.result).split(',')[1];
+        fetch(TRANSCRIBE_URL,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({audio:b64,mime:blob.type})
+        }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+          .then(function(x){
+            dictState('');
+            if(!x.ok) throw new Error((x.j.error&&x.j.error.message)||'Transkription fehlgeschlagen');
+            if(x.j.text) dictate(String(x.j.text).trim());
+          })
+          .catch(function(err){ dictState(''); flash('DIKTAT: '+esc(err.message||'Fehler').toUpperCase().slice(0,50)); });
+      };
+      fr.readAsDataURL(blob);
+    };
+    recorder.start();
+  }).catch(function(){ dictState(''); flash('KEIN MIKROFON-ZUGRIFF — ABC-TASTATUR NUTZEN'); });
+}
+/* Weg 2 (Notnagel ohne MediaRecorder): Web Speech API des Webviews */
+function startSR(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ flash('DIKTAT HIER NICHT VERFÜGBAR — ABC-TASTATUR NUTZEN'); return; }
+  try{
+    recog=new SR();
+    recog.lang='de-DE'; recog.continuous=true; recog.interimResults=false;
+    recog.onresult=function(ev){
+      var t='';
+      for(var i=ev.resultIndex;i<ev.results.length;i++)
+        if(ev.results[i].isFinal) t+=ev.results[i][0].transcript;
+      if(t) dictate(t.trim());
+    };
+    recog.onend=function(){ recog=null; if(dictMode==='rec') dictState(''); };
+    recog.onerror=function(){ recog=null; dictState(''); };
+    recog.start(); dictState('rec');
+  }catch(e){ recog=null; dictState(''); flash('DIKTAT HIER NICHT VERFÜGBAR — ABC-TASTATUR NUTZEN'); }
+}
+function stopDictation(){
+  pttHeld=false;
+  if(recog){ try{ recog.stop(); }catch(e){} recog=null; dictState(''); return; }
+  if(recorder && recorder.state==='recording'){ try{ recorder.stop(); }catch(e){ recorder=null; dictState(''); } return; }
+  if(dictMode==='rec') dictState('');
 }
 
 /* ---- Risikomatrix ---- */
@@ -754,16 +916,10 @@ window.addEventListener('scrollUp',function(){ wheel(-1); });
 window.addEventListener('scrollDown',function(){ wheel(1); });
 window.addEventListener('sideClick',function(){ confirmAction(); });
 window.addEventListener('longPressStart',function(){
-  if(S.screen==='edit'){
-    var l=document.getElementById('edlab');
-    if(l) l.innerHTML='<span class="rec"></span>AUFNAHME …';
-  }
+  if(S.screen==='edit') startDictation();
 });
 window.addEventListener('longPressEnd',function(){
-  if(S.screen==='edit'){
-    var l=document.getElementById('edlab');
-    if(l) l.textContent=FIELDS[S.editKey].label;
-  }
+  if(S.screen==='edit') stopDictation();
 });
 
 /* Desktop-Vorschau */
