@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>SIS® Assist · r1 Creation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================
+   SIS® Assist als r1 Creation
+   BRAUN Design System · Variante „Papier" · v1.0
+   Display 240 × 282 px · Raster 4 px · Rand 16 px
+   Eingabe: Scrollrad (wählen) · Taste (bestätigen)
+   ========================================================== */
+:root{
+  --bg:#E7E4DE;      /* Papier */
+  --sf:#F0EEE9;      /* Fläche */
+  --fg:#1B1A17;      /* Tinte */
+  --mut:#8A867E;     /* Grau */
+  --line:#C7C3BA;    /* Hairline */
+  --ac:#D75A1E;      /* Akzent — genau ein aktives Element */
+  --acf:#FFFFFF;
+  --ocker:#C8862E;
+  --sans:'Helvetica Neue',Helvetica,Arial,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --ease:cubic-bezier(.4,0,.2,1);
+  --ease-in:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:#D7D4CC; /* Beton — Desktop-Umfeld */
+  font-family:var(--sans);color:var(--fg);
+  display:flex;align-items:center;justify-content:center;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+::selection{background:var(--ac);color:#fff}
+
+/* ---- Bühne: exakt das r1-Display ---- */
+#stage{
+  position:relative;width:240px;height:282px;flex:none;
+  background:var(--bg);overflow:hidden;
+  display:flex;flex-direction:column;
+}
+/* Desktop-Vorschau bekommt Gehäuse-Kante; auf dem Gerät (≤260px) fällt sie weg */
+@media (min-width:261px){
+  #stage{border:1px solid rgba(0,0,0,.18);border-radius:8px;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+}
+@media (max-width:260px){
+  body{background:var(--bg);display:block}
+  #stage{width:100%;height:100%}
+  #deskhint{display:none}
+}
+#deskhint{
+  position:fixed;left:0;right:0;bottom:14px;text-align:center;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:#7C786F;text-transform:uppercase;
+}
+#deskhint b{color:var(--ac);font-weight:500}
+
+/* ---- Kopf · 40 ---- */
+#head{
+  height:40px;flex:none;display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;border-bottom:1px solid var(--line);
+}
+#head .brand{font-size:13px;font-weight:700;letter-spacing:-.01em;cursor:pointer;user-select:none}
+#head .brand sup{font-size:7px;vertical-align:super}
+#head .scr{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+
+/* ---- Inhalt ---- */
+#main{flex:1;overflow:hidden;position:relative}
+.pane{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;animation:enter .2s var(--ease-in)}
+.pane::-webkit-scrollbar{display:none}
+@keyframes enter{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes bar{0%{transform:translateX(-100%)}100%{transform:translateX(240px)}}
+
+/* ---- Listenzeile — Scrollrad-Auswahl ---- */
+.row{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 16px;min-height:26px;
+  font-size:13px;font-weight:500;cursor:pointer;user-select:none;
+  border-bottom:1px solid rgba(199,195,186,.55);
+  transition:background .12s var(--ease);
+}
+.row .idx{font-family:var(--mono);font-size:10px;color:var(--mut);width:12px;flex:none}
+.row .lab{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .st{font-family:var(--mono);font-size:10px;color:var(--mut);flex:none}
+.row .st.full{color:var(--fg)}
+.row.on{background:var(--ac);color:var(--acf)}
+.row.on .idx,.row.on .st{color:rgba(255,255,255,.85)}
+.row.back .lab{color:var(--mut);font-size:12px}
+.row.on.back .lab{color:var(--acf)}
+
+/* ---- Fuß: Hinweis · 24 / Aktion · 48 ---- */
+#hint{
+  height:24px;flex:none;display:flex;align-items:center;justify-content:center;gap:4px;
+  font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);
+  border-top:1px solid var(--line);padding:0 8px;white-space:nowrap;overflow:hidden;
+}
+#hint b{color:var(--ac);font-weight:500}
+#hint.err{color:var(--acf);background:var(--ac)}
+#hint.err b{color:var(--acf)}
+
+/* ---- Editor ---- */
+.ed-label{
+  font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--mut);padding:12px 16px 6px;
+}
+.ed-text{
+  padding:0 16px 12px;font-size:14px;line-height:1.45;white-space:pre-wrap;word-break:break-word;
+}
+.ed-text .ph{color:var(--mut);font-size:12px;line-height:1.5}
+.caret{
+  display:inline-block;width:7px;height:15px;margin-left:1px;vertical-align:-2px;
+  background:var(--ac);animation:blink 1s step-start infinite;
+}
+#kb{position:absolute;opacity:0;left:-9999px;top:0;width:10px;height:10px}
+.ed-tools{display:flex;gap:1px;background:var(--line);border-top:1px solid var(--line)}
+.ed-tools div{
+  flex:1;background:var(--sf);text-align:center;padding:8px 0;
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--fg);
+  cursor:pointer;user-select:none;text-transform:uppercase;
+}
+.ed-tools div.warn{color:var(--ac)}
+.rec{
+  display:inline-block;width:8px;height:8px;background:var(--ac);border-radius:50%;
+  margin-right:6px;animation:blink .8s step-start infinite;vertical-align:0;
+}
+
+/* ---- Risikomatrix ---- */
+.grid{padding:8px 16px 4px}
+.g-head,.g-row{display:flex;gap:1px}
+.g-head span,.g-row span{
+  flex:1;text-align:center;font-family:var(--mono);
+}
+.g-head span{font-size:8px;letter-spacing:.04em;color:var(--mut);padding:3px 0}
+.g-row span.tf{flex:none;width:14px;font-size:9px;color:var(--mut);display:flex;align-items:center;justify-content:center}
+.g-head span.tf{flex:none;width:14px}
+.g-row .cell{
+  height:25px;display:flex;align-items:center;justify-content:center;
+  background:var(--sf);font-size:11px;font-weight:500;cursor:pointer;user-select:none;
+  border:1px solid transparent;position:relative;color:var(--fg);
+}
+.g-row{margin-top:1px}
+.g-row .cell .dot{color:var(--line)}
+.g-row .cell em{
+  font-style:normal;position:absolute;top:1px;right:2px;
+  font-size:8px;color:var(--ocker);font-weight:600;
+}
+.g-row .cell.on{border-color:var(--ac);background:rgba(215,90,30,.12)}
+.legend{
+  font-family:var(--mono);font-size:8px;line-height:1.7;color:var(--mut);
+  padding:8px 16px 10px;letter-spacing:.02em;
+}
+
+/* ---- Plan / Aktion ---- */
+.sum{padding:10px 16px 6px}
+.sum .li{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--mono);font-size:10px;color:var(--mut);
+  padding:4px 0;border-bottom:1px solid rgba(199,195,186,.55);
+}
+.sum .li b{color:var(--fg);font-weight:500}
+#action{
+  position:absolute;bottom:0;left:0;right:0;background:var(--bg);
+  height:48px;display:flex;gap:8px;align-items:center;padding:0 16px;
+  border-top:1px solid var(--line);
+}
+.sum{padding-bottom:56px}
+.btn-p{
+  flex:1;background:var(--ac);color:var(--acf);text-align:center;
+  font-size:13px;font-weight:700;padding:11px 0;border-radius:2px;cursor:pointer;user-select:none;
+}
+.btn-s{
+  width:46px;border:1px solid var(--mut);color:var(--fg);text-align:center;
+  padding:10px 0;font-size:13px;border-radius:2px;cursor:pointer;user-select:none;
+}
+
+/* ---- Laden ---- */
+#busy{
+  position:absolute;inset:0;background:var(--bg);z-index:5;
+  display:none;flex-direction:column;justify-content:center;padding:0 16px;
+}
+#busy.vis{display:flex}
+#busy .t1{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--mut);text-transform:uppercase}
+#busy .t2{font-size:22px;font-weight:700;letter-spacing:-.01em;margin:8px 0 18px}
+#busy .track{height:3px;background:var(--line);overflow:hidden;position:relative}
+#busy .track i{position:absolute;top:0;left:0;height:3px;width:90px;background:var(--ac);animation:bar 1.1s var(--ease) infinite}
+
+/* ---- Ergebnis ---- */
+.res{padding:10px 16px 16px;font-size:12px;line-height:1.5}
+.res h4{
+  font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ac);font-weight:600;margin:14px 0 4px;
+}
+.res h4:first-child{margin-top:0}
+.res p{margin:0 0 8px}
+.res li{list-style:none;padding-left:12px;position:relative;margin:0 0 3px}
+.res li::before{content:"–";position:absolute;left:0;color:var(--mut)}
+.res strong{font-weight:700}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="head">
+    <span class="brand" id="brand">SIS<sup>®</sup>&nbsp;Assist</span>
+    <span class="scr" id="scrlab">START</span>
+  </div>
+  <div id="main"></div>
+  <div id="hint"></div>
+  <div id="busy">
+    <div class="t1">Maßnahmenplan</div>
+    <div class="t2" style="animation:blink 1.2s step-start infinite">Generiere&nbsp;…</div>
+    <div class="track"><i></i></div>
+  </div>
+</div>
+<div id="deskhint"><b>▲▼</b> Rad&nbsp;&nbsp;·&nbsp;&nbsp;<b>Enter</b> Taste&nbsp;&nbsp;·&nbsp;&nbsp;<b>Esc</b> Zurück</div>
+
+<textarea id="kb" autocomplete="off" autocapitalize="sentences"></textarea>
+
+<script>
+/* ==========================================================
+   Daten & Konstanten
+   ========================================================== */
+var API_URL = 'https://sis-assist.vercel.app/api/generate';
+
+var THEMENFELDER = [
+  'Kognitive und kommunikative Fähigkeiten',
+  'Mobilität und Beweglichkeit',
+  'Krankheitsbezogene Anforderungen und Belastungen',
+  'Selbstversorgung',
+  'Leben in sozialen Beziehungen',
+  'Wohnen/Häuslichkeit'
+];
+var TF_KURZ = ['Kognition & Kommunikation','Mobilität','Krankheit & Belastung','Selbstversorgung','Soziale Beziehungen','Wohnen/Häuslichkeit'];
+var RISIKEN = ['Dekubitus','Sturz','Inkontinenz','Schmerz','Ernährung','Sonstiges'];
+var RISIKEN_K = ['DK','ST','IK','SZ','ER','SO'];
+
+var SYSTEM_PROMPT = 'Du bist ein erfahrener Pflegeexperte und hilfst bei der Erstellung individueller Maßnahmenpläne auf Basis der Strukturierten Informationssammlung (SIS®).\n\nDeine Aufgabe:\nAnalysiere die bereitgestellten Informationen aus der SIS und erstelle einen konkreten, individualisierten Maßnahmenplan.\n\nStruktur des Maßnahmenplans:\n1. **Zusammenfassung der Pflegesituation** (2-3 Sätze)\n2. **Identifizierte Pflegeprobleme und Ressourcen**\n3. **Pflegeziele** (SMART formuliert)\n4. **Geplante Maßnahmen** - gegliedert nach den relevanten Themenfeldern:\n   - Konkrete Handlungsanweisungen\n   - Häufigkeit/Zeitpunkt der Durchführung\n   - Verantwortlichkeiten\n5. **Evaluationskriterien** - Woran erkennen wir Erfolg?\n\nWichtige Hinweise:\n- Formuliere praxisnah und umsetzbar\n- Berücksichtige die Ressourcen und Wünsche der pflegebedürftigen Person\n- Beachte die identifizierten Risiken aus der Matrix\n- Verwende professionelle Pflegefachsprache\n- Der Plan soll als Arbeitsgrundlage für das Pflegeteam dienen\n- Fasse dich kompakt: der Plan wird auf einem sehr kleinen Display gelesen\n\nAntworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.';
+
+/* Felder-Registry für den Editor */
+var FIELDS = {
+  patientName:{label:'Name',multi:false,ph:'Name der pflegebedürftigen Person'},
+  birthDate:{label:'Geburtsdatum',multi:false,ph:'z. B. 12.03.1941'},
+  interviewDate:{label:'Gespräch am',multi:false,ph:'z. B. 05.07.2026'},
+  nurseSign:{label:'Handzeichen',multi:false,ph:'Kürzel der Pflegefachkraft'},
+  oTon:{label:'O-Ton — „Was bewegt Sie im Augenblick?"',multi:true,ph:'Aussagen der Person, der Angehörigen oder des Betreuers in deren eigenen Worten …'},
+  tf1:{label:'1 · '+TF_KURZ[0],multi:true,ph:'Orientierung, Gedächtnis, Aufmerksamkeit, Verstehen und Sich-mitteilen …'},
+  tf2:{label:'2 · '+TF_KURZ[1],multi:true,ph:'Positionswechsel, Sitzposition, Aufstehen, Fortbewegen, Treppensteigen …'},
+  tf3:{label:'3 · '+TF_KURZ[2],multi:true,ph:'Medikation, Verbandswechsel, Therapien, Arztbesuche, Umgang mit Erkrankungen …'},
+  tf4:{label:'4 · '+TF_KURZ[3],multi:true,ph:'Körperpflege, An-/Auskleiden, Essen und Trinken, Ausscheidung …'},
+  tf5:{label:'5 · '+TF_KURZ[4],multi:true,ph:'Kontakte, Aktivitäten, Tagesgestaltung, Interessen, Teilhabe …'},
+  tf6:{label:'6 · '+TF_KURZ[5],multi:true,ph:'Zimmergestaltung, persönliche Gegenstände, Orientierung im Wohnbereich …'}
+};
+
+/* Datenmodell */
+function blankData(){
+  var r=[]; for(var i=0;i<6;i++){ var row=[]; for(var j=0;j<6;j++) row.push({v:'',w:false}); r.push(row); }
+  return { patientName:'',birthDate:'',interviewDate:'',nurseSign:'',oTon:'',
+           tf1:'',tf2:'',tf3:'',tf4:'',tf5:'',tf6:'', risiken:r, plan:'' };
+}
+var D = blankData();
+
+/* Zustand */
+var S = { screen:'home', sel:0, editKey:null, cell:0, busy:false, hintTimer:null };
+
+/* ==========================================================
+   Persistenz — creationStorage (r1) mit localStorage-Fallback
+   ========================================================== */
+function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
+function b64dec(s){ return decodeURIComponent(escape(atob(s))); }
+var saveTimer=null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){
+    var json=JSON.stringify(D);
+    try{
+      if(window.creationStorage && creationStorage.plain){ creationStorage.plain.setItem('sis_r1', b64enc(json)); }
+      else localStorage.setItem('sis_r1', json);
+    }catch(e){}
+  },300);
+}
+function load(cb){
+  try{
+    if(window.creationStorage && creationStorage.plain){
+      creationStorage.plain.getItem('sis_r1').then(function(v){
+        if(v){ try{ merge(JSON.parse(b64dec(v))); }catch(e){} } cb();
+      }).catch(function(){ cb(); });
+      return;
+    }
+    var v=localStorage.getItem('sis_r1');
+    if(v) merge(JSON.parse(v));
+  }catch(e){}
+  cb();
+}
+function merge(o){ if(!o) return; var b=blankData(); for(var k in b) if(o[k]!==undefined) D[k]=o[k]; }
+
+/* ==========================================================
+   Menüs
+   ========================================================== */
+function homeItems(){
+  return [
+    {id:'meta', idx:'S', lab:'Stammdaten', st:metaCount()},
+    {id:'oTon', idx:'O', lab:'O-Ton · Augenblick', st:D.oTon?'●':'○'},
+    {id:'tf1', idx:'1', lab:TF_KURZ[0], st:D.tf1?'●':'○'},
+    {id:'tf2', idx:'2', lab:TF_KURZ[1], st:D.tf2?'●':'○'},
+    {id:'tf3', idx:'3', lab:TF_KURZ[2], st:D.tf3?'●':'○'},
+    {id:'tf4', idx:'4', lab:TF_KURZ[3], st:D.tf4?'●':'○'},
+    {id:'tf5', idx:'5', lab:TF_KURZ[4], st:D.tf5?'●':'○'},
+    {id:'tf6', idx:'6', lab:TF_KURZ[5], st:D.tf6?'●':'○'},
+    {id:'risiko', idx:'R', lab:'Risikomatrix', st:riskCount()>0?String(riskCount()):'○'},
+    {id:'plan', idx:'▸', lab:'Maßnahmenplan', st:D.plan?'●':''}
+  ];
+}
+function metaItems(){
+  return [
+    {id:'back', lab:'‹ Zurück', back:true},
+    {id:'patientName', idx:'N', lab:D.patientName||'Name', st:D.patientName?'●':'○'},
+    {id:'birthDate', idx:'G', lab:D.birthDate||'Geburtsdatum', st:D.birthDate?'●':'○'},
+    {id:'interviewDate', idx:'D', lab:D.interviewDate||'Gespräch am', st:D.interviewDate?'●':'○'},
+    {id:'nurseSign', idx:'H', lab:D.nurseSign||'Handzeichen', st:D.nurseSign?'●':'○'}
+  ];
+}
+function metaCount(){
+  var n=0; ['patientName','birthDate','interviewDate','nurseSign'].forEach(function(k){ if(D[k]) n++; });
+  return n+'/4';
+}
+function riskCount(){
+  var n=0; D.risiken.forEach(function(row){ row.forEach(function(c){ if(c.v) n++; }); });
+  return n;
+}
+
+/* ==========================================================
+   Rendering
+   ========================================================== */
+var main=document.getElementById('main');
+var hintEl=document.getElementById('hint');
+var scrlab=document.getElementById('scrlab');
+var kb=document.getElementById('kb');
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function hint(html){ hintEl.className=''; hintEl.innerHTML=html; }
+function flash(msg){
+  hintEl.className='err'; hintEl.innerHTML=msg;
+  clearTimeout(S.hintTimer);
+  S.hintTimer=setTimeout(function(){ render(); },1600);
+}
+
+function render(){
+  clearTimeout(S.hintTimer);
+  if(S.screen!=='edit'){ kb.blur(); }
+  if(S.screen==='home') renderList('START', homeItems(), '<b>Rad</b>&nbsp;wählen&nbsp;·&nbsp;<b>Taste</b>&nbsp;öffnen');
+  else if(S.screen==='meta') renderList('STAMMDATEN', metaItems(), '<b>Rad</b>&nbsp;wählen&nbsp;·&nbsp;<b>Taste</b>&nbsp;öffnen');
+  else if(S.screen==='edit') renderEdit();
+  else if(S.screen==='risiko') renderRisiko();
+  else if(S.screen==='plan') renderPlan();
+  else if(S.screen==='result') renderResult();
+}
+
+function renderList(title, items, h){
+  scrlab.textContent=title;
+  var html='<div class="pane" id="pane">';
+  items.forEach(function(it,i){
+    html+='<div class="row'+(i===S.sel?' on':'')+(it.back?' back':'')+'" data-i="'+i+'">'
+        +(it.idx?'<span class="idx">'+it.idx+'</span>':'')
+        +'<span class="lab">'+esc(it.lab)+'</span>'
+        +(it.st!==undefined?'<span class="st'+(it.st!=='○'?' full':'')+'">'+it.st+'</span>':'')
+        +'</div>';
+  });
+  html+='</div>';
+  main.innerHTML=html;
+  hint(h);
+  var rows=main.querySelectorAll('.row');
+  rows.forEach(function(r){
+    r.addEventListener('click',function(){ S.sel=+r.getAttribute('data-i'); confirmAction(); });
+  });
+  scrollSelIntoView();
+}
+
+function scrollSelIntoView(){
+  var on=main.querySelector('.row.on')||main.querySelector('.cell.on');
+  if(on && on.scrollIntoView) on.scrollIntoView({block:'nearest'});
+}
+
+/* ---- Editor ---- */
+function renderEdit(){
+  var f=FIELDS[S.editKey];
+  scrlab.textContent='EINGABE';
+  var v=D[S.editKey]||'';
+  var body=v?esc(v):'<span class="ph">'+esc(f.ph)+'</span>';
+  main.innerHTML='<div class="pane" id="pane">'
+    +'<div class="ed-label" id="edlab">'+esc(f.label)+'</div>'
+    +'<div class="ed-text" id="edtext">'+body+'<span class="caret"></span></div>'
+    +'</div>'
+    +'<div class="ed-tools" style="position:absolute;bottom:0;left:0;right:0">'
+    +'<div id="ed-ok">OK</div><div id="ed-clr" class="warn">Löschen</div>'
+    +'</div>';
+  hint(onR1()?'<b>PTT halten</b>&nbsp;diktieren&nbsp;·&nbsp;<b>Taste</b>&nbsp;OK':'<b>Tippen</b>&nbsp;·&nbsp;<b>Esc</b>&nbsp;OK');
+  document.getElementById('ed-ok').addEventListener('click',function(e){ e.stopPropagation(); closeEdit(); });
+  document.getElementById('ed-clr').addEventListener('click',function(e){ e.stopPropagation(); kb.value=''; syncEdit(); });
+  main.querySelector('.pane').addEventListener('click',function(){ kb.focus(); });
+  kb.value=v;
+  setTimeout(function(){ try{ kb.focus(); }catch(e){} },50);
+  var p=main.querySelector('.pane'); p.scrollTop=p.scrollHeight;
+}
+function syncEdit(){
+  if(S.screen!=='edit') return;
+  D[S.editKey]=kb.value;
+  var f=FIELDS[S.editKey];
+  var el=document.getElementById('edtext');
+  if(el) el.innerHTML=(kb.value?esc(kb.value):'<span class="ph">'+esc(f.ph)+'</span>')+'<span class="caret"></span>';
+  var p=main.querySelector('.pane'); if(p) p.scrollTop=p.scrollHeight;
+  save();
+}
+kb.addEventListener('input',syncEdit);
+function openEdit(key){
+  S.prev=S.screen; S.prevSel=S.sel; S.editKey=key; S.screen='edit'; render();
+}
+function closeEdit(){
+  D[S.editKey]=kb.value; save();
+  S.screen=(S.prev==='meta')?'meta':'home';
+  S.sel=S.prevSel||0; render();
+}
+function dictate(text){
+  if(!text) return;
+  var v=kb.value;
+  kb.value=v?(v.replace(/\s+$/,'')+' '+text):text;
+  syncEdit();
+}
+
+/* ---- Risikomatrix ---- */
+/* Zellen 0..35 · Position 36 = Zurück-Zeile */
+function renderRisiko(){
+  scrlab.textContent='RISIKOMATRIX';
+  var html='<div class="pane" id="pane"><div class="grid"><div class="g-head"><span class="tf"></span>';
+  RISIKEN_K.forEach(function(k){ html+='<span>'+k+'</span>'; });
+  html+='</div>';
+  for(var i=0;i<6;i++){
+    html+='<div class="g-row"><span class="tf">'+(i+1)+'</span>';
+    for(var j=0;j<6;j++){
+      var c=D.risiken[i][j], n=i*6+j;
+      var t=c.v==='ja'?'J':(c.v==='nein'?'N':'<span class="dot">·</span>');
+      html+='<span class="cell'+(S.cell===n?' on':'')+'" data-c="'+n+'">'+t+(c.w?'<em>!</em>':'')+'</span>';
+    }
+    html+='</div>';
+  }
+  html+='</div>'
+     +'<div class="row back'+(S.cell===36?' on':'')+'" data-c="36" style="border-top:1px solid var(--line)"><span class="lab">‹ Zurück</span></div>'
+     +'<div class="legend">DK Dekubitus · ST Sturz · IK Inkontinenz<br>SZ Schmerz · ER Ernährung · SO Sonstiges<br><span style="color:var(--ocker)">!</span> weitere Einschätzung notwendig</div>'
+     +'</div>';
+  main.innerHTML=html;
+  hint('<b>Rad</b>&nbsp;Zelle&nbsp;·&nbsp;<b>Taste</b>&nbsp;–&nbsp;/&nbsp;J&nbsp;/&nbsp;J!&nbsp;/&nbsp;N&nbsp;/&nbsp;N!');
+  main.querySelectorAll('[data-c]').forEach(function(el){
+    el.addEventListener('click',function(){ S.cell=+el.getAttribute('data-c'); confirmAction(); });
+  });
+  scrollSelIntoView();
+}
+function cycleCell(n){
+  var i=Math.floor(n/6), j=n%6, c=D.risiken[i][j];
+  /* – → J → J! → N → N! → – */
+  if(!c.v){ c.v='ja'; c.w=false; }
+  else if(c.v==='ja' && !c.w){ c.w=true; }
+  else if(c.v==='ja' && c.w){ c.v='nein'; c.w=false; }
+  else if(c.v==='nein' && !c.w){ c.w=true; }
+  else { c.v=''; c.w=false; }
+  save(); renderRisiko();
+}
+
+/* ---- Plan ---- */
+function renderPlan(){
+  scrlab.textContent='MASSNAHMENPLAN';
+  var tfN=0; for(var i=1;i<=6;i++) if(D['tf'+i]) tfN++;
+  main.innerHTML='<div class="pane" id="pane"><div class="sum">'
+    +'<div class="li"><span>STAMMDATEN</span><b>'+metaCount()+'</b></div>'
+    +'<div class="li"><span>O-TON</span><b>'+(D.oTon?'erfasst':'—')+'</b></div>'
+    +'<div class="li"><span>THEMENFELDER</span><b>'+tfN+'/6</b></div>'
+    +'<div class="li"><span>RISIKEN MARKIERT</span><b>'+riskCount()+'</b></div>'
+    +(D.plan?'<div class="li"><span>LETZTER PLAN</span><b>vorhanden</b></div>':'')
+    +'</div></div>'
+    +'<div id="action">'
+    +(D.plan?'<div class="btn-s" id="btn-last">≡</div>':'')
+    +'<div class="btn-p" id="btn-gen">Plan erstellen</div>'
+    +'</div>';
+  hint('<b>Taste</b>&nbsp;erstellen'+(D.plan?'&nbsp;·&nbsp;<b>≡</b>&nbsp;letzter Plan':''));
+  document.getElementById('btn-gen').addEventListener('click',generatePlan);
+  var bl=document.getElementById('btn-last');
+  if(bl) bl.addEventListener('click',function(){ S.screen='result'; render(); });
+}
+
+function renderResult(){
+  scrlab.textContent='PLAN · ERGEBNIS';
+  main.innerHTML='<div class="pane" id="pane"><div class="res">'+md(D.plan||'')+'</div></div>';
+  hint('<b>Rad</b>&nbsp;lesen&nbsp;·&nbsp;<b>Taste</b>&nbsp;zurück');
+}
+
+/* Markdown-lite → HTML */
+function md(src){
+  var out=[], lines=String(src).split(/\r?\n/), para=[];
+  function inline(s){
+    return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>');
+  }
+  function flushP(){ if(para.length){ out.push('<p>'+inline(para.join(' '))+'</p>'); para=[]; } }
+  lines.forEach(function(l){
+    var t=l.trim();
+    if(!t){ flushP(); return; }
+    var h=t.match(/^#{1,4}\s+(.*)$/);
+    if(h){ flushP(); out.push('<h4>'+inline(h[1].replace(/\*\*/g,''))+'</h4>'); return; }
+    var li=t.match(/^(?:[-*•]|\d+\.)\s+(.*)$/);
+    if(li){ flushP(); out.push('<li>'+inline(li[1])+'</li>'); return; }
+    para.push(t);
+  });
+  flushP();
+  return out.join('');
+}
+
+/* ==========================================================
+   KI — Vercel-Proxy, Fallback rabbit-LLM (auf dem Gerät)
+   ========================================================== */
+function buildMessage(){
+  var m='# Strukturierte Informationssammlung (SIS)\n\n## Stammdaten\n';
+  m+='- **Name:** '+(D.patientName||'Nicht angegeben')+'\n';
+  m+='- **Geburtsdatum:** '+(D.birthDate||'Nicht angegeben')+'\n';
+  m+='- **Gespräch am:** '+(D.interviewDate||'Nicht angegeben')+'\n';
+  m+='- **Handzeichen:** '+(D.nurseSign||'Nicht angegeben')+'\n\n';
+  m+='## O-Ton der pflegebedürftigen Person\n"'+(D.oTon||'Keine Angaben')+'"\n\n## Themenfelder\n\n';
+  for(var i=1;i<=6;i++){
+    m+='### '+i+'. '+THEMENFELDER[i-1]+'\n'+(D['tf'+i]||'Keine Angaben')+'\n\n';
+  }
+  m+='## Risikomatrix\n\n| Themenfeld | '+RISIKEN.join(' | ')+' |\n';
+  m+='|'+' --- |'.repeat(RISIKEN.length+1)+'\n';
+  THEMENFELDER.forEach(function(tf,ti){
+    var row='| '+(ti+1)+'. '+tf+' |';
+    RISIKEN.forEach(function(_,ri){
+      var c=D.risiken[ti][ri];
+      row+=' '+((c.v||'-')+(c.w?' (!)':''))+' |';
+    });
+    m+=row+'\n';
+  });
+  m+='\n*Hinweis: (!) = weitere Einschätzung notwendig*\n\n---\n\n';
+  m+='Bitte erstelle auf Basis dieser Informationen einen individuellen Maßnahmenplan.';
+  return m;
+}
+
+function onR1(){ return typeof PluginMessageHandler!=='undefined'; }
+var busyEl=document.getElementById('busy');
+
+function generatePlan(){
+  if(S.busy) return;
+  var hasTf=false; for(var i=1;i<=6;i++) if(D['tf'+i]) hasTf=true;
+  if(!D.oTon && !hasTf){ flash('MIND. O-TON ODER EIN THEMENFELD AUSFÜLLEN'); return; }
+  S.busy=true; busyEl.classList.add('vis');
+  var msg=buildMessage();
+  fetch(API_URL,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({system:SYSTEM_PROMPT,message:msg})
+  }).then(function(r){ return r.json().then(function(j){ return {ok:r.ok,j:j}; }); })
+    .then(function(x){
+      if(!x.ok) throw new Error((x.j.error&&x.j.error.message)||'API-Fehler');
+      planDone(x.j.text||'');
+    })
+    .catch(function(err){
+      if(onR1()){
+        /* Fallback: rabbit-LLM des Geräts */
+        try{
+          PluginMessageHandler.postMessage(JSON.stringify({
+            message:SYSTEM_PROMPT+'\n\n'+msg, useLLM:true, wantsR1Response:false
+          }));
+          return; /* Antwort kommt über onPluginMessage */
+        }catch(e){}
+      }
+      planFail(err&&err.message||'Keine Verbindung');
+    });
+}
+function planDone(text){
+  S.busy=false; busyEl.classList.remove('vis');
+  if(!text){ planFail('Leere Antwort'); return; }
+  D.plan=text; save();
+  S.screen='result'; render();
+}
+function planFail(msg){
+  S.busy=false; busyEl.classList.remove('vis');
+  render(); flash('FEHLER: '+esc(msg).toUpperCase().slice(0,60));
+}
+
+/* rabbitOS-Nachrichten: LLM-Antwort oder Diktat in den Editor */
+window.onPluginMessage=function(e){
+  var text='';
+  try{
+    var d=(typeof e==='string')?JSON.parse(e):e;
+    if(typeof d==='string') text=d;
+    else if(d){ text=d.message||d.data||d.text||''; if(typeof text!=='string') text=JSON.stringify(text); }
+  }catch(_){ text=String(e||''); }
+  if(!text) return;
+  if(S.busy){ planDone(text); return; }
+  if(S.screen==='edit'){ dictate(text); }
+};
+
+/* ==========================================================
+   Eingabe — Scrollrad, Taste, Touch, Desktop
+   ========================================================== */
+function listLen(){
+  if(S.screen==='home') return homeItems().length;
+  if(S.screen==='meta') return metaItems().length;
+  return 0;
+}
+function wheel(dir){
+  if(S.busy) return;
+  if(S.screen==='edit' || S.screen==='result'){
+    var p=main.querySelector('.pane'); if(p) p.scrollTop+=dir*24;
+    return;
+  }
+  if(S.screen==='risiko'){
+    S.cell=(S.cell+dir+37)%37; renderRisiko(); return;
+  }
+  if(S.screen==='plan') return;
+  var n=listLen(); if(!n) return;
+  S.sel=(S.sel+dir+n)%n; render();
+}
+function confirmAction(){
+  if(S.busy) return;
+  if(S.screen==='home'){
+    var it=homeItems()[S.sel];
+    if(it.id==='meta'){ S.homeSel=S.sel; S.screen='meta'; S.sel=1; render(); }
+    else if(it.id==='risiko'){ S.homeSel=S.sel; S.screen='risiko'; S.cell=0; render(); }
+    else if(it.id==='plan'){ S.homeSel=S.sel; S.screen='plan'; render(); }
+    else { S.homeSel=S.sel; openEdit(it.id); }
+  }
+  else if(S.screen==='meta'){
+    var m=metaItems()[S.sel];
+    if(m.id==='back'){ back(); } else openEdit(m.id);
+  }
+  else if(S.screen==='edit'){ closeEdit(); }
+  else if(S.screen==='risiko'){
+    if(S.cell===36){ back(); } else cycleCell(S.cell);
+  }
+  else if(S.screen==='plan'){ generatePlan(); }
+  else if(S.screen==='result'){ S.screen='plan'; render(); }
+}
+function back(){
+  if(S.busy) return;
+  if(S.screen==='edit'){ closeEdit(); return; }
+  if(S.screen==='result'){ S.screen='plan'; render(); return; }
+  if(S.screen!=='home'){ S.screen='home'; S.sel=S.homeSel||0; render(); return; }
+}
+
+/* r1-Hardware */
+window.addEventListener('scrollUp',function(){ wheel(-1); });
+window.addEventListener('scrollDown',function(){ wheel(1); });
+window.addEventListener('sideClick',function(){ confirmAction(); });
+window.addEventListener('longPressStart',function(){
+  if(S.screen==='edit'){
+    var l=document.getElementById('edlab');
+    if(l) l.innerHTML='<span class="rec"></span>AUFNAHME …';
+  }
+});
+window.addEventListener('longPressEnd',function(){
+  if(S.screen==='edit'){
+    var l=document.getElementById('edlab');
+    if(l) l.textContent=FIELDS[S.editKey].label;
+  }
+});
+
+/* Desktop-Vorschau */
+window.addEventListener('keydown',function(e){
+  if(e.key==='ArrowUp'){ e.preventDefault(); wheel(-1); }
+  else if(e.key==='ArrowDown'){ e.preventDefault(); wheel(1); }
+  else if(e.key==='Escape'){ e.preventDefault(); back(); }
+  else if(e.key==='Enter'){
+    if(S.screen==='edit' && FIELDS[S.editKey].multi) return; /* Enter = Zeilenumbruch */
+    e.preventDefault(); confirmAction();
+  }
+});
+var wheelAcc=0;
+window.addEventListener('wheel',function(e){
+  wheelAcc+=e.deltaY;
+  if(Math.abs(wheelAcc)>40){ wheel(wheelAcc>0?1:-1); wheelAcc=0; }
+},{passive:true});
+document.getElementById('brand').addEventListener('click',back);
+
+/* Start */
+load(function(){
+  if(!D.interviewDate){
+    var t=new Date(); D.interviewDate=('0'+t.getDate()).slice(-2)+'.'+('0'+(t.getMonth()+1)).slice(-2)+'.'+t.getFullYear();
+  }
+  render();
+});
+</script>
+</body>
+</html>
