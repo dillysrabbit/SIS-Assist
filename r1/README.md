@@ -24,8 +24,13 @@ der Tastatur direkt ins geöffnete Feld.
 
 ## Screens
 
-1. **Start** — Liste aller Abschnitte mit Füllstand (○/●)
-2. **Stammdaten** — Name, Geburtsdatum, Gesprächsdatum, Handzeichen
+1. **Start** — oberste Zeile zeigt die aktive Bewohner:in (und die Anzahl
+   im Verzeichnis), darunter alle Abschnitte mit Füllstand (○/●)
+2. **Bewohner** — lokales Verzeichnis: *Neu anlegen* (öffnet direkt die
+   Namenseingabe), Eintrag wählen → *Öffnen* macht ihn aktiv, *Löschen*
+   fragt einmal nach („Wirklich löschen?"). ● markiert den aktiven Eintrag.
+   Alle Daten bleiben auf dem Gerät — kein Abgleich mit der Web-App/Appwrite.
+3. **Stammdaten** — Name, Geburtsdatum, Gesprächsdatum, Handzeichen
 3. **Editor** — ein Feld pro Screen, Diktat oder Tastatur, blinkender Cursor
 4. **Risikomatrix** — 6 Themenfelder × 6 Risiken (DK ST IK SZ ER SO),
    `!` = weitere Einschätzung notwendig (Ocker)
@@ -42,7 +47,10 @@ der Tastatur direkt ins geöffnete Feld.
   auf dem r1, fällt sie auf das Geräte-LLM zurück
   (`PluginMessageHandler`, `useLLM: true`).
 - **Speicherung:** `creationStorage.plain` auf dem r1 (Base64-JSON),
-  sonst `localStorage`. Autosave bei jeder Änderung.
+  sonst `localStorage`; Schlüssel `sis_r1_v2` (Verzeichnis mit mehreren
+  Datensätzen + aktiver ID). Eine ältere Einzeldokumentation unter `sis_r1`
+  wird beim ersten Start automatisch als erster Verzeichnis-Eintrag
+  übernommen. Autosave bei jeder Änderung.
 - **Hardware-Events:** `scrollUp` / `scrollDown` / `sideClick` /
   `longPressStart` / `longPressEnd`; zusätzlich Touch, Maus und Tastatur für
   die Vorschau im Browser.

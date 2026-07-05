@@ -262,47 +262,93 @@ function blankData(){
   return { patientName:'',birthDate:'',interviewDate:'',nurseSign:'',oTon:'',
            tf1:'',tf2:'',tf3:'',tf4:'',tf5:'',tf6:'', risiken:r, plan:'' };
 }
-var D = blankData();
+/* Bewohnerverzeichnis — mehrere Datensätze, einer aktiv */
+var APP = { residents:[], activeId:null };
+var D = null; /* aktiver Datensatz (Referenz in APP.residents) */
+
+function newId(){ return 'b'+Date.now().toString(36)+Math.floor(Math.random()*46656).toString(36); }
+function today(){
+  var t=new Date();
+  return ('0'+t.getDate()).slice(-2)+'.'+('0'+(t.getMonth()+1)).slice(-2)+'.'+t.getFullYear();
+}
+function resName(r){ return (r&&r.patientName)?r.patientName:'Ohne Namen'; }
+function activate(id){
+  D=null;
+  for(var i=0;i<APP.residents.length;i++) if(APP.residents[i].rid===id){ D=APP.residents[i]; break; }
+  if(!D) D=APP.residents[0];
+  if(D) APP.activeId=D.rid;
+}
+function addResident(){
+  var r=blankData(); r.rid=newId(); r.interviewDate=today();
+  APP.residents.push(r); activate(r.rid); save();
+  return r;
+}
+function removeResident(id){
+  APP.residents=APP.residents.filter(function(r){ return r.rid!==id; });
+  if(!APP.residents.length) addResident();
+  else if(APP.activeId===id) activate(APP.residents[0].rid);
+  else activate(APP.activeId);
+  save();
+}
 
 /* Zustand */
-var S = { screen:'home', sel:0, editKey:null, cell:0, busy:false, hintTimer:null };
+var S = { screen:'home', sel:0, editKey:null, cell:0, busy:false, hintTimer:null, bewId:null, delArm:false };
 
 /* ==========================================================
    Persistenz — creationStorage (r1) mit localStorage-Fallback
    ========================================================== */
 function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
 function b64dec(s){ return decodeURIComponent(escape(atob(s))); }
+var onR1Store = function(){ return window.creationStorage && creationStorage.plain; };
+function stGet(key){
+  if(onR1Store()){
+    return creationStorage.plain.getItem(key).then(function(v){
+      return v ? JSON.parse(b64dec(v)) : null;
+    }).catch(function(){ return null; });
+  }
+  try{ var v=localStorage.getItem(key); return Promise.resolve(v?JSON.parse(v):null); }
+  catch(e){ return Promise.resolve(null); }
+}
 var saveTimer=null;
 function save(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(function(){
-    var json=JSON.stringify(D);
+    var json=JSON.stringify(APP);
     try{
-      if(window.creationStorage && creationStorage.plain){ creationStorage.plain.setItem('sis_r1', b64enc(json)); }
-      else localStorage.setItem('sis_r1', json);
+      if(onR1Store()){ creationStorage.plain.setItem('sis_r1_v2', b64enc(json)); }
+      else localStorage.setItem('sis_r1_v2', json);
     }catch(e){}
   },300);
 }
-function load(cb){
-  try{
-    if(window.creationStorage && creationStorage.plain){
-      creationStorage.plain.getItem('sis_r1').then(function(v){
-        if(v){ try{ merge(JSON.parse(b64dec(v))); }catch(e){} } cb();
-      }).catch(function(){ cb(); });
-      return;
-    }
-    var v=localStorage.getItem('sis_r1');
-    if(v) merge(JSON.parse(v));
-  }catch(e){}
-  cb();
+/* Datensatz gegen das Soll-Schema normalisieren */
+function normRecord(o){
+  var b=blankData();
+  if(o) for(var k in b) if(o[k]!==undefined) b[k]=o[k];
+  b.rid=(o&&o.rid)||newId();
+  return b;
 }
-function merge(o){ if(!o) return; var b=blankData(); for(var k in b) if(o[k]!==undefined) D[k]=o[k]; }
+function load(cb){
+  stGet('sis_r1_v2').then(function(v2){
+    if(v2 && v2.residents && v2.residents.length){
+      APP.residents=v2.residents.map(normRecord);
+      activate(v2.activeId);
+      return cb();
+    }
+    /* Migration: alte Einzeldokumentation wird erster Verzeichnis-Eintrag */
+    stGet('sis_r1').then(function(v1){
+      if(v1){ APP.residents=[normRecord(v1)]; activate(APP.residents[0].rid); save(); }
+      else addResident();
+      cb();
+    });
+  });
+}
 
 /* ==========================================================
    Menüs
    ========================================================== */
 function homeItems(){
   return [
+    {id:'bew', idx:'B', lab:resName(D), st:String(APP.residents.length)},
     {id:'meta', idx:'S', lab:'Stammdaten', st:metaCount()},
     {id:'oTon', idx:'O', lab:'O-Ton · Augenblick', st:D.oTon?'●':'○'},
     {id:'tf1', idx:'1', lab:TF_KURZ[0], st:D.tf1?'●':'○'},
@@ -323,6 +369,27 @@ function metaItems(){
     {id:'interviewDate', idx:'D', lab:D.interviewDate||'Gespräch am', st:D.interviewDate?'●':'○'},
     {id:'nurseSign', idx:'H', lab:D.nurseSign||'Handzeichen', st:D.nurseSign?'●':'○'}
   ];
+}
+function bewItems(){
+  var items=[
+    {id:'back', lab:'‹ Zurück', back:true},
+    {id:'new', idx:'+', lab:'Neu anlegen'}
+  ];
+  APP.residents.forEach(function(r){
+    items.push({id:'r:'+r.rid, lab:resName(r), st:r.rid===APP.activeId?'●':'○'});
+  });
+  return items;
+}
+function bewOptItems(){
+  return [
+    {id:'back', lab:'‹ Zurück', back:true},
+    {id:'open', idx:'▸', lab:'Öffnen'},
+    {id:'del', idx:'×', lab:S.delArm?'Wirklich löschen?':'Löschen'}
+  ];
+}
+function bewById(id){
+  for(var i=0;i<APP.residents.length;i++) if(APP.residents[i].rid===id) return APP.residents[i];
+  return null;
 }
 function metaCount(){
   var n=0; ['patientName','birthDate','interviewDate','nurseSign'].forEach(function(k){ if(D[k]) n++; });
@@ -355,6 +422,8 @@ function render(){
   if(S.screen!=='edit'){ kb.blur(); }
   if(S.screen==='home') renderList('START', homeItems(), '<b>Rad</b>&nbsp;wählen&nbsp;·&nbsp;<b>Taste</b>&nbsp;öffnen');
   else if(S.screen==='meta') renderList('STAMMDATEN', metaItems(), '<b>Rad</b>&nbsp;wählen&nbsp;·&nbsp;<b>Taste</b>&nbsp;öffnen');
+  else if(S.screen==='bew') renderList('BEWOHNER', bewItems(), '<b>Rad</b>&nbsp;wählen&nbsp;·&nbsp;<b>Taste</b>&nbsp;öffnen');
+  else if(S.screen==='bewopt') renderList(resName(bewById(S.bewId)).toUpperCase().slice(0,14), bewOptItems(), '<b>Taste</b>&nbsp;bestätigen');
   else if(S.screen==='edit') renderEdit();
   else if(S.screen==='risiko') renderRisiko();
   else if(S.screen==='plan') renderPlan();
@@ -605,6 +674,8 @@ window.onPluginMessage=function(e){
 function listLen(){
   if(S.screen==='home') return homeItems().length;
   if(S.screen==='meta') return metaItems().length;
+  if(S.screen==='bew') return bewItems().length;
+  if(S.screen==='bewopt') return bewOptItems().length;
   return 0;
 }
 function wheel(dir){
@@ -618,13 +689,15 @@ function wheel(dir){
   }
   if(S.screen==='plan') return;
   var n=listLen(); if(!n) return;
+  S.delArm=false;
   S.sel=(S.sel+dir+n)%n; render();
 }
 function confirmAction(){
   if(S.busy) return;
   if(S.screen==='home'){
     var it=homeItems()[S.sel];
-    if(it.id==='meta'){ S.homeSel=S.sel; S.screen='meta'; S.sel=1; render(); }
+    if(it.id==='bew'){ S.homeSel=S.sel; S.screen='bew'; S.sel=1; render(); }
+    else if(it.id==='meta'){ S.homeSel=S.sel; S.screen='meta'; S.sel=1; render(); }
     else if(it.id==='risiko'){ S.homeSel=S.sel; S.screen='risiko'; S.cell=0; render(); }
     else if(it.id==='plan'){ S.homeSel=S.sel; S.screen='plan'; render(); }
     else { S.homeSel=S.sel; openEdit(it.id); }
@@ -632,6 +705,33 @@ function confirmAction(){
   else if(S.screen==='meta'){
     var m=metaItems()[S.sel];
     if(m.id==='back'){ back(); } else openEdit(m.id);
+  }
+  else if(S.screen==='bew'){
+    var b=bewItems()[S.sel];
+    if(b.id==='back'){ back(); }
+    else if(b.id==='new'){
+      addResident();
+      /* direkt den Namen erfassen */
+      S.prev='home'; S.prevSel=0; S.editKey='patientName'; S.screen='edit'; render();
+    }
+    else{
+      S.bewId=b.id.slice(2); S.delArm=false; S.screen='bewopt'; S.sel=1; render();
+    }
+  }
+  else if(S.screen==='bewopt'){
+    var o=bewOptItems()[S.sel];
+    if(o.id==='back'){ back(); }
+    else if(o.id==='open'){
+      activate(S.bewId); save();
+      S.screen='home'; S.sel=0; render();
+    }
+    else if(o.id==='del'){
+      if(!S.delArm){ S.delArm=true; render(); }
+      else{
+        removeResident(S.bewId);
+        S.delArm=false; S.screen='bew'; S.sel=1; render();
+      }
+    }
   }
   else if(S.screen==='edit'){ closeEdit(); }
   else if(S.screen==='risiko'){
@@ -642,8 +742,10 @@ function confirmAction(){
 }
 function back(){
   if(S.busy) return;
+  S.delArm=false;
   if(S.screen==='edit'){ closeEdit(); return; }
   if(S.screen==='result'){ S.screen='plan'; render(); return; }
+  if(S.screen==='bewopt'){ S.screen='bew'; S.sel=1; render(); return; }
   if(S.screen!=='home'){ S.screen='home'; S.sel=S.homeSel||0; render(); return; }
 }
 
@@ -683,9 +785,7 @@ document.getElementById('brand').addEventListener('click',back);
 
 /* Start */
 load(function(){
-  if(!D.interviewDate){
-    var t=new Date(); D.interviewDate=('0'+t.getDate()).slice(-2)+'.'+('0'+(t.getMonth()+1)).slice(-2)+'.'+t.getFullYear();
-  }
+  if(!D.interviewDate) D.interviewDate=today();
   render();
 });
 </script>
