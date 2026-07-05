@@ -14,7 +14,7 @@ Werte, 4-px-Raster, 16-px-Rand, Kopf 40 px, Aktion 48 px, Radius 2 px.
 
 | Eingabe | Wirkung |
 |---|---|
-| **Scrollrad** | Auswahl in Listen bewegen · Zelle in der Risikomatrix wählen · lange Texte lesen |
+| **Scrollrad** | Auswahl in Listen bewegen · Zelle in der Risikomatrix wählen · im Editor den Cursor bewegen · Ergebnis lesen |
 | **Taste (kurz)** | Öffnen / Bestätigen · Risikozelle weiterschalten (– → J → J! → N → N! → –) · Plan erstellen |
 | **PTT halten** | Diktat in das geöffnete Eingabefeld (siehe „Diktat" unten) |
 | **⌨ ABC (im Editor)** | On-Screen-Tastatur (QWERTZ mit Umlauten, ⇧, 123-Ebene) — funktioniert immer per Touch |
@@ -50,7 +50,10 @@ der Tastatur direkt ins geöffnete Feld.
    fragt einmal nach („Wirklich löschen?"). ● markiert den aktiven Eintrag.
    Alle Daten bleiben auf dem Gerät — kein Abgleich mit der Web-App/Appwrite.
 3. **Stammdaten** — Name, Geburtsdatum, Gesprächsdatum, Handzeichen
-3. **Editor** — ein Feld pro Screen, Diktat oder Tastatur, blinkender Cursor
+4. **Editor** — ein Feld pro Screen, Diktat oder Tastatur. Das Scrollrad
+   bewegt den Cursor zeichenweise (die Ansicht folgt), Tippen in den Text
+   setzt ihn direkt an die Stelle; ⌫, Tastatur und Diktat arbeiten an der
+   Cursor-Position
 4. **Risikomatrix** — 6 Themenfelder × 6 Risiken (DK ST IK SZ ER SO),
    `!` = weitere Einschätzung notwendig (Ocker)
 5. **Maßnahmenplan** — Zusammenfassung des Füllstands, Erstellen per Taste,
