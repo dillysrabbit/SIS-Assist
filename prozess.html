@@ -504,7 +504,7 @@ function vSis(b){
 
   <div class="section-head"><h2>Sechs Themenfelder</h2></div>
   ${warum('themenfelder')}
-  <div class="grid g2" style="margin-top:10px">
+  <div class="grid" style="margin-top:10px">
     ${TF.map((f,i)=>`<div class="card tight">
       <div class="spread"><h3>${i+1} · ${f.name}</h3>${s.themenfelder[f.k].trim()?'<span class="chip ok">bearbeitet</span>':'<span class="chip none">offen</span>'}</div>
       <div class="hint" style="margin:4px 0 8px">${f.leit}</div>
