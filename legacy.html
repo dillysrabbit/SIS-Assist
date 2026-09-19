@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIS® – Strukturierte Informationssammlung</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/wing.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#8B1A4A">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SIS Assist">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@18/dist/iife/sdk.js"></script>
+    <style>
+        /* ===== CareConnect design tokens ===== */
+        :root {
+            /* surfaces (warm paper) */
+            --paper:   #FAF9F6;
+            --paper-2: #FFFFFF;
+            --paper-3: #F3EFE8;
+            /* ink (warm near-black) */
+            --ink:       #211B18;
+            --ink-soft:  #6B6259;
+            --ink-faint: #A89E93;
+            /* hairlines */
+            --line:        #E7E1D8;
+            --line-strong: #D8D0C4;
+            /* berry (brand accent) */
+            --berry:      #8B1A4A;
+            --berry-dark: #6D1039;
+            --berry-light:#A8325F;
+            --berry-50:   #FDF2F7;
+            --berry-100:  #FCE7F0;
+            /* gold (numerals / achievement only) */
+            --gold:      #C5982A;
+            --gold-dark: #A67D1A;
+            --gold-50:   #FBF8EE;
+            --gold-100:  #F5EDD3;
+            /* ok (correct / positive) */
+            --ok:    #2C5F4A;
+            --ok-50: #EDF4F0;
+            /* semantic aliases (berry) */
+            --accent:      var(--berry);
+            --accent-dark: var(--berry-dark);
+            --accent-50:   var(--berry-50);
+            --accent-100:  var(--berry-100);
+            /* type */
+            --serif: "Newsreader", Georgia, "Times New Roman", serif;
+            --sans:  "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+            --mono:  ui-monospace, "SF Mono", Menlo, monospace;
+            /* radii */
+            --r-pill: 999px;
+            --r-card: 12px;
+            --r-card-sm: 6px;
+            --r-input: 9px;
+            --r-xs: 4px;
+            /* shadows — soft, warm, sparing */
+            --shadow-card-hover: 0 22px 44px -26px rgba(33, 27, 24, 0.42);
+            --shadow-modal: 0 40px 90px -40px rgba(33, 27, 24, 0.6);
+            --shadow-pop: 0 8px 24px -8px rgba(139, 26, 74, 0.45);
+            /* motion — one confident ease, never bouncy */
+            --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+            --dur-fast: 0.2s;
+            --dur: 0.25s;
+            --dur-slow: 0.38s;
+            --ls-eyebrow: 0.18em;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.5;
+            font-size: 16px;
+            min-height: 100vh;
+        }
+
+        ::selection { background: var(--accent); color: #fff; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-xs); }
+
+        /* ===== shared editorial bits ===== */
+        .eyebrow {
+            display: inline-block;
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: var(--ls-eyebrow);
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .accent-word { color: var(--accent); font-style: italic; }
+
+        /* ===== Header ===== */
+        .header {
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            padding: 1.25rem 0 1.5rem;
+        }
+
+        .header-content {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 32px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand-block { display: flex; flex-direction: column; gap: 0.35rem; }
+
+        .logo { display: flex; align-items: center; gap: 0.6rem; }
+        .logo-mark { width: 46px; height: auto; flex-shrink: 0; }
+
+        .logo-main {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: 2rem;
+            line-height: 1;
+            letter-spacing: -0.01em;
+            color: var(--ink);
+        }
+
+        .logo-reg { font-size: 0.85rem; color: var(--accent); vertical-align: super; }
+
+        .logo-badge {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--berry-50);
+            border: 1px solid var(--berry-100);
+            padding: 0.25rem 0.6rem;
+            border-radius: var(--r-pill);
+        }
+
+        .header-subtitle {
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: 1.05rem;
+            font-weight: 400;
+            color: var(--ink-soft);
+        }
+
+        .admin-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--sans);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+            background: var(--paper-2);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--r-pill);
+            padding: 9px 16px;
+            cursor: pointer;
+            transition: all var(--dur) var(--ease);
+        }
+
+        .admin-toggle:hover { border-color: var(--ink); transform: translateY(-1px); }
+        .admin-toggle svg { width: 16px; height: 16px; }
+
+        /* ===== Main ===== */
+        .main-container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 48px 32px 96px;
+        }
+
+        /* shared card surface */
+        .meta-section,
+        .risiko-section,
+        .result-card,
+        .themenfeld-card {
+            background: var(--paper-2);
+            border: 1px solid var(--line);
+            border-radius: var(--r-card);
+        }
+
+        /* ===== Meta ===== */
+        .meta-section { padding: 24px; margin-bottom: 32px; }
+        .meta-section .eyebrow { margin-bottom: 18px; }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 0.45rem; }
+
+        .form-label {
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+        }
+
+        .form-input {
+            width: 100%;
+            font-family: var(--sans);
+            font-size: 15px;
+            color: var(--ink);
+            padding: 12px 14px;
+            background: var(--paper-2);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--r-input);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+        }
+
+        .form-input::placeholder { color: var(--ink-faint); }
+
+        /* ===== O-Ton (editorial highlight) ===== */
+        .oton-section {
+            background: var(--berry-50);
+            border: 1px solid var(--berry-100);
+            border-left: 3px solid var(--accent);
+            border-radius: var(--r-card);
+            padding: 28px;
+            margin-bottom: 40px;
+        }
+
+        .oton-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
+
+        .oton-icon {
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+            border-radius: var(--r-pill);
+            background: var(--accent);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .oton-title {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-style: italic;
+            font-size: clamp(20px, 2.4vw, 28px);
+            line-height: 1.15;
+            letter-spacing: -0.01em;
+            color: var(--ink);
+        }
+
+        .oton-subtitle { margin-top: 0.3rem; font-size: 15px; color: var(--ink-soft); }
+
+        .oton-textarea {
+            width: 100%;
+            min-height: 120px;
+            font-family: var(--sans);
+            font-size: 16px;
+            line-height: 1.6;
+            padding: 16px;
+            background: var(--paper-2);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--r-input);
+            color: var(--ink);
+            resize: vertical;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .oton-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+        }
+        .oton-textarea::placeholder { color: var(--ink-faint); }
+
+        /* ===== Section heads ===== */
+        .themenfelder-section { margin-bottom: 40px; }
+
+        .section-head { margin-bottom: 24px; }
+        .section-head .eyebrow { display: block; margin-bottom: 8px; }
+
+        .section-title {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: clamp(28px, 4vw, 40px);
+            line-height: 1.1;
+            letter-spacing: -0.015em;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+
+        /* ===== Themenfeld cards ===== */
+        .themenfeld-card {
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+        }
+        .themenfeld-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-card-hover); }
+
+        .themenfeld-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: background var(--dur) var(--ease);
+        }
+        .themenfeld-header:hover { background: var(--paper); }
+
+        .themenfeld-number {
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: 18px;
+            font-variant-numeric: tabular-nums;
+            color: var(--gold-dark);
+            background: var(--gold-50);
+            border: 1px solid var(--gold-100);
+            border-radius: var(--r-pill);
+        }
+
+        .themenfeld-title {
+            flex: 1;
+            font-family: var(--sans);
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--ink);
+        }
+
+        .themenfeld-toggle { color: var(--ink-soft); transition: transform var(--dur) var(--ease); }
+        .themenfeld-card.collapsed .themenfeld-toggle { transform: rotate(-90deg); }
+
+        .themenfeld-content { padding: 20px; border-top: 1px solid var(--line); }
+        .themenfeld-card.collapsed .themenfeld-content { display: none; }
+
+        .themenfeld-textarea {
+            width: 100%;
+            min-height: 140px;
+            font-family: var(--sans);
+            font-size: 15px;
+            line-height: 1.7;
+            padding: 14px;
+            background: var(--paper);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--r-input);
+            color: var(--ink);
+            resize: vertical;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+
+        .themenfeld-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--paper-2);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+        }
+        .themenfeld-textarea::placeholder { color: var(--ink-faint); }
+
+        /* ===== Risikomatrix ===== */
+        .risiko-section { padding: 24px; margin-bottom: 40px; }
+        .risiko-section .eyebrow { display: block; margin-bottom: 10px; }
+
+        .risiko-title {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: clamp(20px, 2.4vw, 26px);
+            color: var(--ink);
+            margin-bottom: 0.35rem;
+        }
+
+        .risiko-subtitle { font-size: 15px; color: var(--ink-soft); margin-bottom: 24px; }
+
+        .risiko-table-wrapper { overflow-x: auto; margin: 0 -0.5rem; padding: 0 0.5rem; }
+
+        .risiko-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+
+        .risiko-table th {
+            background: transparent;
+            padding: 0 8px 12px;
+            font-size: 11.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--ink-soft);
+            border-bottom: 1px solid var(--line-strong);
+            text-align: center;
+        }
+        .risiko-table th:first-child { text-align: left; padding-left: 8px; }
+
+        .risiko-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid var(--line);
+            text-align: center;
+            vertical-align: middle;
+        }
+        .risiko-table td:first-child { text-align: left; padding-left: 8px; font-size: 14px; color: var(--ink); }
+        .risiko-table tbody tr:hover { background: var(--paper); }
+        .risiko-table tbody tr:last-child td { border-bottom: none; }
+
+        .risiko-options { display: flex; gap: 0.5rem; justify-content: center; align-items: center; }
+        .risiko-option { display: flex; align-items: center; gap: 0.3rem; cursor: pointer; }
+
+        .risiko-option input[type="radio"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 1.5px solid var(--line-strong);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all var(--dur-fast) var(--ease);
+            position: relative;
+        }
+        .risiko-option input[type="radio"]:hover { border-color: var(--accent); }
+        .risiko-option input[type="radio"]:checked { border-color: var(--accent); background: var(--accent); }
+        .risiko-option input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+        }
+        .risiko-option span { font-size: 13px; color: var(--ink-soft); }
+
+        .risiko-checkbox { display: flex; align-items: center; justify-content: center; }
+        .risiko-checkbox input[type="checkbox"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 1.5px solid var(--line-strong);
+            border-radius: var(--r-xs);
+            cursor: pointer;
+            transition: all var(--dur-fast) var(--ease);
+            position: relative;
+        }
+        .risiko-checkbox input[type="checkbox"]:hover { border-color: var(--accent); }
+        .risiko-checkbox input[type="checkbox"]:checked { border-color: var(--accent); background: var(--accent); }
+        .risiko-checkbox input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 46%;
+            left: 50%;
+            width: 5px;
+            height: 9px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .risiko-freetext {
+            width: 100%;
+            min-width: 130px;
+            font-family: var(--sans);
+            font-size: 13px;
+            color: var(--ink);
+            padding: 8px 10px;
+            background: var(--paper);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--r-xs);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .risiko-freetext:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+        }
+        .risiko-freetext::placeholder { color: var(--ink-faint); }
+        .risiko-head-input { text-transform: none; letter-spacing: normal; font-weight: 500; }
+
+        /* ===== Action buttons ===== */
+        .action-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin: 40px 0;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55em;
+            font-family: var(--sans);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 13px 24px;
+            border-radius: var(--r-pill);
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: inherit;
+            white-space: nowrap;
+            transition: all var(--dur) var(--ease);
+        }
+        .btn svg { width: 18px; height: 18px; }
+
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:hover { background: var(--accent-dark); transform: translateY(-1px); box-shadow: var(--shadow-pop); }
+
+        .btn-secondary { background: var(--paper-2); color: var(--ink); border: 1px solid var(--line-strong); }
+        .btn-secondary:hover { border-color: var(--ink); transform: translateY(-1px); }
+
+        .btn-accent { background: var(--gold); color: var(--berry-dark); }
+        .btn-accent:hover { background: #D4AD3E; transform: translateY(-1px); }
+
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+        /* ===== Result ===== */
+        .result-section { display: none; margin-top: 40px; }
+        .result-section.visible { display: block; animation: fadeIn var(--dur-slow) var(--ease); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+        .result-card { padding: 32px; box-shadow: var(--shadow-card-hover); }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .result-title {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: clamp(20px, 2.4vw, 26px);
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .result-title svg { width: 24px; height: 24px; color: var(--accent); }
+
+        .result-actions { display: flex; gap: 0.5rem; }
+
+        .btn-icon {
+            display: inline-flex;
+            padding: 9px;
+            border-radius: var(--r-pill);
+            background: var(--paper-2);
+            border: 1px solid var(--line-strong);
+            color: var(--ink-soft);
+            cursor: pointer;
+            transition: all var(--dur) var(--ease);
+        }
+        .btn-icon:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+        .btn-icon svg { width: 18px; height: 18px; }
+
+        .result-content { font-size: 16px; line-height: 1.72; color: var(--ink); }
+        .result-content h3 {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: 20px;
+            color: var(--ink);
+            margin: 1.6rem 0 0.6rem;
+        }
+        .result-content h3:first-child { margin-top: 0; }
+        .result-content h4 {
+            font-family: var(--sans);
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin: 1.3rem 0 0.4rem;
+        }
+        .result-content ul, .result-content ol { margin: 0.5rem 0 0.5rem 1.4rem; }
+        .result-content li { margin-bottom: 0.45rem; }
+        .result-content strong { font-weight: 600; }
+
+        /* ===== Loading ===== */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: color-mix(in oklab, var(--paper) 88%, transparent);
+            backdrop-filter: blur(3px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+        .loading-overlay.visible { display: flex; }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 2px solid var(--line-strong);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text { font-family: var(--serif); font-style: italic; font-size: 1.2rem; color: var(--ink); }
+
+        /* ===== Modal ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(33, 27, 24, 0.5);
+            backdrop-filter: blur(3px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+        .modal-overlay.visible { display: flex; }
+
+        .modal {
+            background: var(--paper-2);
+            border: 1px solid var(--line);
+            border-radius: var(--r-card);
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-modal);
+            animation: modalIn var(--dur) var(--ease);
+        }
+        @keyframes modalIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 28px;
+            border-bottom: 1px solid var(--line);
+        }
+        .modal-title { font-family: var(--serif); font-weight: 500; font-size: 24px; color: var(--ink); }
+
+        .modal-close {
+            display: inline-flex;
+            background: none;
+            border: none;
+            color: var(--ink-soft);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: var(--r-pill);
+            transition: all var(--dur) var(--ease);
+        }
+        .modal-close:hover { background: var(--paper-3); color: var(--ink); }
+
+        .modal-body { padding: 28px; }
+        .modal-footer {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            padding: 20px 28px;
+            border-top: 1px solid var(--line);
+        }
+
+        .password-section { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+        .password-section.authenticated { display: none; }
+
+        .admin-content { display: none; }
+        .admin-content.visible { display: block; }
+
+        .admin-form-group { margin-bottom: 24px; }
+        .admin-form-group:last-child { margin-bottom: 0; }
+
+        .admin-label {
+            display: block;
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            margin-bottom: 0.5rem;
+        }
+
+        .admin-input {
+            width: 100%;
+            font-family: var(--sans);
+            font-size: 15px;
+            padding: 12px 14px;
+            background: var(--paper-2);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--r-input);
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .admin-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+        }
+
+        .admin-textarea {
+            width: 100%;
+            min-height: 200px;
+            font-family: var(--mono);
+            font-size: 13px;
+            line-height: 1.6;
+            padding: 16px;
+            background: var(--paper-3);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--r-input);
+            color: var(--ink);
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .admin-textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+        }
+
+        .admin-hint { font-size: 13px; color: var(--ink-soft); margin-top: 0.5rem; line-height: 1.5; }
+
+        /* ===== Status badge ===== */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0.35rem 0.7rem;
+            border-radius: var(--r-pill);
+            border: 1px solid transparent;
+        }
+        .status-badge.success { background: var(--ok-50); color: var(--ok); border-color: color-mix(in oklab, var(--ok) 25%, transparent); }
+        .status-badge.warning { background: var(--gold-50); color: var(--gold-dark); border-color: var(--gold-100); }
+        .status-badge.error { background: var(--berry-50); color: var(--accent); border-color: var(--berry-100); }
+
+        /* ===== Toasts ===== */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            background: var(--paper-2);
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--ink-soft);
+            border-radius: var(--r-card-sm);
+            padding: 14px 18px;
+            box-shadow: var(--shadow-card-hover);
+            max-width: 360px;
+            animation: toastIn var(--dur) var(--ease);
+        }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+
+        .toast.success { border-left-color: var(--ok); }
+        .toast.error { border-left-color: var(--accent); }
+        .toast.info { border-left-color: var(--ink-soft); }
+
+        .toast-icon { width: 20px; height: 20px; flex-shrink: 0; color: var(--ink-soft); }
+        .toast.success .toast-icon { color: var(--ok); }
+        .toast.error .toast-icon { color: var(--accent); }
+        .toast.info .toast-icon { color: var(--ink-soft); }
+
+        .toast-message { font-size: 14px; color: var(--ink); }
+
+        /* ===== Autosave ===== */
+        .autosave-indicator {
+            position: fixed;
+            bottom: 18px;
+            left: 18px;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 12px;
+            color: var(--ink-faint);
+            opacity: 0;
+            transition: opacity 0.3s var(--ease);
+        }
+        .autosave-indicator.visible { opacity: 1; }
+        .autosave-indicator svg { width: 14px; height: 14px; color: var(--ok); }
+
+        /* ===== Footer ===== */
+        .footer {
+            text-align: center;
+            padding: 40px 32px;
+            border-top: 1px solid var(--line);
+            color: var(--ink-faint);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .footer a { color: var(--accent); }
+        .footer a:hover { text-decoration: underline; }
+
+        /* ===== Auth overlay ===== */
+        .auth-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--paper);
+            z-index: 4000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .auth-overlay.visible { display: flex; }
+
+        .auth-card {
+            width: 100%;
+            max-width: 380px;
+            background: var(--paper-2);
+            border: 1px solid var(--line);
+            border-radius: var(--r-card);
+            padding: 36px 32px;
+            box-shadow: var(--shadow-card-hover);
+        }
+        .auth-card .logo { margin-bottom: 18px; }
+        .auth-sub {
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: 1.05rem;
+            line-height: 1.4;
+            color: var(--ink-soft);
+            margin-bottom: 24px;
+        }
+        .auth-error { margin-top: 12px; min-height: 1em; font-size: 13px; color: var(--berry); }
+
+        /* ===== Header actions ===== */
+        .header-actions { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+        .header-user { font-size: 13px; color: var(--ink-soft); }
+
+        /* ===== Bewohner-Leiste ===== */
+        .patient-bar {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            background: var(--paper-2);
+            border: 1px solid var(--line);
+            border-radius: var(--r-card);
+            padding: 16px 20px;
+            margin-bottom: 32px;
+        }
+        .patient-bar-left { display: flex; flex-direction: column; gap: 0.4rem; min-width: 240px; flex: 1; }
+        .patient-select {
+            font-family: var(--sans);
+            font-size: 15px;
+            color: var(--ink);
+            padding: 11px 14px;
+            background: var(--paper-2);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--r-input);
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .patient-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+        }
+        .patient-bar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn-sm { padding: 9px 16px; font-size: 13px; }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .header-top { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .logo-main { font-size: 1.7rem; }
+            .header-content { padding: 0 20px; }
+            .main-container { padding: 32px 20px 64px; }
+            .meta-section,
+            .oton-section,
+            .risiko-section,
+            .result-card { padding: 20px; }
+            .action-section { flex-direction: column-reverse; }
+            .action-section .btn { width: 100%; }
+            .patient-bar-actions { width: 100%; }
+            .patient-bar-actions .btn { flex: 1; }
+            .modal-overlay { padding: 16px; }
+            .modal { max-height: calc(100vh - 32px); }
+            .toast-container { left: 16px; right: 16px; }
+            .toast { max-width: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+            html { scroll-behavior: auto; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Overlay -->
+    <div class="auth-overlay visible" id="authOverlay">
+        <div class="auth-card">
+            <div class="logo">
+                <img class="logo-mark" src="/assets/wing.svg" alt="">
+                <span class="logo-main">SIS<span class="logo-reg">®</span> Assist</span>
+                <span class="logo-badge">stationär</span>
+            </div>
+            <p class="auth-sub">Bitte melden Sie sich an, um auf die <span class="accent-word">Bewohnerdaten</span> zuzugreifen.</p>
+            <form id="loginForm" onsubmit="return doLogin(event)">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label" for="loginEmail">E-Mail</label>
+                    <input type="email" id="loginEmail" class="form-input" autocomplete="username" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label class="form-label" for="loginPassword">Passwort</label>
+                    <input type="password" id="loginPassword" class="form-input" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" id="loginBtn" style="width: 100%;">Anmelden</button>
+                <p class="auth-error" id="authError"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-top">
+                <div class="brand-block">
+                    <div class="logo">
+                        <img class="logo-mark" src="/assets/wing.svg" alt="">
+                        <span class="logo-main">SIS<span class="logo-reg">®</span> Assist</span>
+                        <span class="logo-badge">stationär</span>
+                    </div>
+                    <p class="header-subtitle">Strukturierte Informationssammlung</p>
+                </div>
+                <div class="header-actions">
+                    <span class="header-user" id="headerUser"></span>
+                    <button class="admin-toggle" onclick="openAdminModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        Einstellungen
+                    </button>
+                    <button class="admin-toggle" id="logoutBtn" onclick="logout()" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Abmelden
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container" id="appMain">
+        <!-- Bewohner-Leiste -->
+        <section class="patient-bar">
+            <div class="patient-bar-left">
+                <span class="eyebrow">Bewohner:in</span>
+                <select id="patientSelect" class="patient-select" onchange="onPatientSelectChange()"></select>
+            </div>
+            <div class="patient-bar-actions">
+                <button class="btn btn-secondary btn-sm" onclick="newPatient()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Neu
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="saveActivePatient(true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Speichern
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="deleteActivePatient()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Löschen
+                </button>
+            </div>
+        </section>
+
+        <!-- Meta Information -->
+        <section class="meta-section">
+            <span class="eyebrow">Stammdaten</span>
+            <div class="meta-grid">
+                <div class="form-group">
+                    <label class="form-label" for="patientName">Name der pflegebedürftigen Person</label>
+                    <input type="text" id="patientName" class="form-input" placeholder="Vor- und Nachname">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="birthDate">Geburtsdatum</label>
+                    <input type="date" id="birthDate" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="interviewDate">Gespräch am</label>
+                    <input type="date" id="interviewDate" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="nurseSign">Handzeichen Pflegefachkraft</label>
+                    <input type="text" id="nurseSign" class="form-input" placeholder="Kürzel">
+                </div>
+            </div>
+        </section>
+
+        <!-- O-Ton Section -->
+        <section class="oton-section">
+            <div class="oton-header">
+                <div class="oton-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="oton-title">„Was bewegt Sie im <span class="accent-word">Augenblick</span>?"</h2>
+                    <p class="oton-subtitle">Was brauchen Sie? Was können wir für Sie tun?</p>
+                </div>
+            </div>
+            <textarea id="oTon" class="oton-textarea" placeholder="Erfassen Sie hier die Aussagen der pflegebedürftigen Person, der Angehörigen oder des Betreuers in deren eigenen Worten..."></textarea>
+        </section>
+
+        <!-- Themenfelder -->
+        <section class="themenfelder-section">
+            <div class="section-head">
+                <span class="eyebrow">Strukturierte Erhebung</span>
+                <h2 class="section-title">Themenfelder</h2>
+            </div>
+
+            <div class="themenfeld-card" data-themenfeld="1">
+                <div class="themenfeld-header" onclick="toggleThemenfeld(this)">
+                    <span class="themenfeld-number">1</span>
+                    <span class="themenfeld-title">Kognitive und kommunikative Fähigkeiten</span>
+                    <svg class="themenfeld-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div class="themenfeld-content">
+                    <textarea id="themenfeld1" class="themenfeld-textarea" placeholder="Beschreiben Sie die kognitiven Fähigkeiten: Orientierung, Gedächtnis, Aufmerksamkeit, Kommunikationsfähigkeit, Verstehen und Sich-mitteilen..."></textarea>
+                </div>
+            </div>
+
+            <div class="themenfeld-card" data-themenfeld="2">
+                <div class="themenfeld-header" onclick="toggleThemenfeld(this)">
+                    <span class="themenfeld-number">2</span>
+                    <span class="themenfeld-title">Mobilität und Beweglichkeit</span>
+                    <svg class="themenfeld-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div class="themenfeld-content">
+                    <textarea id="themenfeld2" class="themenfeld-textarea" placeholder="Beschreiben Sie die Mobilität: Positionswechsel im Bett, Halten einer stabilen Sitzposition, Aufstehen, Fortbewegen, Treppensteigen..."></textarea>
+                </div>
+            </div>
+
+            <div class="themenfeld-card" data-themenfeld="3">
+                <div class="themenfeld-header" onclick="toggleThemenfeld(this)">
+                    <span class="themenfeld-number">3</span>
+                    <span class="themenfeld-title">Krankheitsbezogene Anforderungen und Belastungen</span>
+                    <svg class="themenfeld-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div class="themenfeld-content">
+                    <textarea id="themenfeld3" class="themenfeld-textarea" placeholder="Beschreiben Sie krankheitsbezogene Anforderungen: Medikation, Injektionen, Verbandswechsel, Therapiemaßnahmen, Arztbesuche, Umgang mit Erkrankungen..."></textarea>
+                </div>
+            </div>
+
+            <div class="themenfeld-card" data-themenfeld="4">
+                <div class="themenfeld-header" onclick="toggleThemenfeld(this)">
+                    <span class="themenfeld-number">4</span>
+                    <span class="themenfeld-title">Selbstversorgung</span>
+                    <svg class="themenfeld-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div class="themenfeld-content">
+                    <textarea id="themenfeld4" class="themenfeld-textarea" placeholder="Beschreiben Sie die Selbstversorgung: Körperpflege, An-/Auskleiden, Essen und Trinken, Ausscheidung, Selbstständigkeit bei der Versorgung..."></textarea>
+                </div>
+            </div>
+
+            <div class="themenfeld-card" data-themenfeld="5">
+                <div class="themenfeld-header" onclick="toggleThemenfeld(this)">
+                    <span class="themenfeld-number">5</span>
+                    <span class="themenfeld-title">Leben in sozialen Beziehungen</span>
+                    <svg class="themenfeld-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div class="themenfeld-content">
+                    <textarea id="themenfeld5" class="themenfeld-textarea" placeholder="Beschreiben Sie das soziale Leben: Kontakte zu Angehörigen und Freunden, Teilnahme an Aktivitäten, Tagesgestaltung, Interessen, Bedürfnisse nach sozialer Teilhabe..."></textarea>
+                </div>
+            </div>
+
+            <div class="themenfeld-card" data-themenfeld="6">
+                <div class="themenfeld-header" onclick="toggleThemenfeld(this)">
+                    <span class="themenfeld-number">6</span>
+                    <span class="themenfeld-title">Wohnen/Häuslichkeit</span>
+                    <svg class="themenfeld-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+                <div class="themenfeld-content">
+                    <textarea id="themenfeld6" class="themenfeld-textarea" placeholder="Beschreiben Sie die Wohnsituation: Zimmergestaltung, persönliche Gegenstände, Orientierung im Wohnbereich, Wünsche zur Gestaltung des persönlichen Lebensraums..."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- Risikomatrix -->
+        <section class="risiko-section">
+            <span class="eyebrow">Fachliche Einschätzung</span>
+            <h3 class="risiko-title">Erste fachliche Einschätzung</h3>
+            <p class="risiko-subtitle">Relevante Risiken und Phänomene für die Pflege und Betreuung</p>
+
+            <div class="risiko-table-wrapper">
+                <table class="risiko-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 180px;">Themenfeld</th>
+                            <th>Dekubitus</th>
+                            <th>Sturz</th>
+                            <th>Inkontinenz</th>
+                            <th>Schmerz</th>
+                            <th>Ernährung</th>
+                            <th><input type="text" id="sonstigesLabel" class="risiko-freetext risiko-head-input" placeholder="Sonstiges …"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="risikoTableBody">
+                        <!-- Generated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Action Buttons -->
+        <div class="action-section">
+            <button class="btn btn-primary" onclick="generatePlan()" id="generateBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
+                Maßnahmenplan generieren
+            </button>
+        </div>
+
+        <!-- Result Section -->
+        <section class="result-section" id="resultSection">
+            <div class="result-card">
+                <div class="result-header">
+                    <h3 class="result-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                        Vorschlag Maßnahmenplan
+                    </h3>
+                    <div class="result-actions">
+                        <button class="btn-icon" onclick="copyResult()" title="Kopieren">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon" onclick="shareResult()" title="Teilen">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="18" cy="5" r="3"/>
+                                <circle cx="6" cy="12" r="3"/>
+                                <circle cx="18" cy="19" r="3"/>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="result-content" id="resultContent">
+                    <!-- Generated content will appear here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>SIS® – Konzept: Beikirch/Roes · Nutzungsrechte: BMG · Version 2.0/2017</p>
+        <p style="margin-top: 0.5rem;">WebApp-Umsetzung für die digitale Pflegedokumentation</p>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Maßnahmenplan wird erstellt …</p>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Einstellungen</h3>
+                <button class="modal-close" onclick="closeAdminModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="admin-content visible" id="adminContent">
+                    <div class="admin-form-group">
+                        <label class="admin-label" for="systemPrompt">System Prompt</label>
+                        <textarea id="systemPrompt" class="admin-textarea" placeholder="System Prompt für die KI..."></textarea>
+                        <p class="admin-hint">Dieser Prompt definiert, wie die KI den Maßnahmenplan erstellt.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="adminFooter">
+                <button class="btn btn-secondary" onclick="closeAdminModal()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="saveAdminSettings()">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Autosave Indicator -->
+    <div class="autosave-indicator" id="autosaveIndicator">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        Automatisch gespeichert
+    </div>
+
+    <script>
+        // ============================================
+        // Configuration & State
+        // ============================================
+
+        const DEFAULT_SYSTEM_PROMPT = `Du bist ein erfahrener Pflegeexperte und hilfst bei der Erstellung individueller Maßnahmenpläne auf Basis der Strukturierten Informationssammlung (SIS®).
+
+Deine Aufgabe:
+Analysiere die bereitgestellten Informationen aus der SIS und erstelle einen konkreten, individualisierten Maßnahmenplan.
+
+Struktur des Maßnahmenplans:
+1. **Zusammenfassung der Pflegesituation** (2-3 Sätze)
+2. **Identifizierte Pflegeprobleme und Ressourcen**
+3. **Pflegeziele** (SMART formuliert)
+4. **Geplante Maßnahmen** - gegliedert nach den relevanten Themenfeldern:
+   - Konkrete Handlungsanweisungen
+   - Häufigkeit/Zeitpunkt der Durchführung
+   - Verantwortlichkeiten
+5. **Evaluationskriterien** - Woran erkennen wir Erfolg?
+
+Wichtige Hinweise:
+- Formuliere praxisnah und umsetzbar
+- Berücksichtige die Ressourcen und Wünsche der pflegebedürftigen Person
+- Beachte die identifizierten Risiken aus der Matrix
+- Verwende professionelle Pflegefachsprache
+- Der Plan soll als Arbeitsgrundlage für das Pflegeteam dienen
+
+Antworte auf Deutsch und formatiere den Plan übersichtlich mit Markdown.`;
+
+        const THEMENFELDER = [
+            'Kognitive und kommunikative Fähigkeiten',
+            'Mobilität und Beweglichkeit',
+            'Krankheitsbezogene Anforderungen und Belastungen',
+            'Selbstversorgung',
+            'Leben in sozialen Beziehungen',
+            'Wohnen/Häuslichkeit'
+        ];
+
+        const RISIKEN = ['Dekubitus', 'Sturz', 'Inkontinenz', 'Schmerz', 'Ernährung', 'Sonstiges'];
+
+        // ============================================
+        // Appwrite (Auth + Datenbank)
+        // ============================================
+
+        const APPWRITE = {
+            endpoint:     'https://fra.cloud.appwrite.io/v1',
+            projectId:    '6a3bfb59000cc80cbacd',
+            databaseId:   '6a3bfe100031c0e248d8',
+            collectionId: 'bewohnerin'
+        };
+
+        let aClient = null, account = null, databases = null, AW = null;
+        if (typeof Appwrite !== 'undefined') {
+            const { Client, Account, Databases, ID, Permission, Role, Query } = Appwrite;
+            aClient = new Client().setEndpoint(APPWRITE.endpoint).setProject(APPWRITE.projectId);
+            account = new Account(aClient);
+            databases = new Databases(aClient);
+            AW = { ID, Permission, Role, Query };
+        }
+
+        let currentUser = null;
+        let activePatientId = null;
+        let suppressAutosave = false;
+        let autosaveTimeout = null;
+
+        // ============================================
+        // Initialization
+        // ============================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initRisikoTable();
+            setupAutosave();
+            checkApiKeyStatus();
+
+            // Set default date to today
+            document.getElementById('interviewDate').value = new Date().toISOString().split('T')[0];
+
+            bootstrapAuth();
+        });
+
+        // ============================================
+        // Authentication
+        // ============================================
+
+        async function bootstrapAuth() {
+            if (!account) {
+                document.getElementById('authError').textContent = 'Appwrite-SDK konnte nicht geladen werden. Bitte Seite neu laden.';
+                return;
+            }
+            try {
+                currentUser = await account.get();
+                await onAuthenticated();
+            } catch (e) {
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            currentUser = null;
+            document.getElementById('authOverlay').classList.add('visible');
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('headerUser').textContent = '';
+        }
+
+        async function onAuthenticated() {
+            document.getElementById('authOverlay').classList.remove('visible');
+            document.getElementById('logoutBtn').style.display = '';
+            document.getElementById('headerUser').textContent = currentUser.email || '';
+            await loadPatients();
+        }
+
+        async function doLogin(event) {
+            event.preventDefault();
+            if (!account) return false;
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+            const errEl = document.getElementById('authError');
+            errEl.textContent = '';
+            btn.disabled = true;
+            try {
+                try { await account.deleteSession('current'); } catch (_) {}
+                await account.createEmailPasswordSession(email, password);
+                currentUser = await account.get();
+                document.getElementById('loginPassword').value = '';
+                await onAuthenticated();
+                showToast('Willkommen zurück', 'success');
+            } catch (e) {
+                errEl.textContent = e?.message || 'Anmeldung fehlgeschlagen.';
+            } finally {
+                btn.disabled = false;
+            }
+            return false;
+        }
+
+        async function logout() {
+            try { await account.deleteSession('current'); } catch (_) {}
+            activePatientId = null;
+            clearFormFields();
+            document.getElementById('patientSelect').innerHTML = '';
+            showLogin();
+            showToast('Abgemeldet', 'info');
+        }
+
+        // ============================================
+        // Bewohner-Verwaltung (Appwrite Datenbank)
+        // ============================================
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function clearFormFields() {
+            document.querySelectorAll('#appMain input[type="text"], #appMain input[type="date"], #appMain textarea').forEach(el => { el.value = ''; });
+            document.querySelectorAll('.risiko-table input').forEach(el => { el.checked = false; });
+        }
+
+        async function loadPatients() {
+            const select = document.getElementById('patientSelect');
+            try {
+                const res = await databases.listDocuments(APPWRITE.databaseId, APPWRITE.collectionId, [
+                    AW.Query.orderDesc('$updatedAt'),
+                    AW.Query.limit(100)
+                ]);
+                const docs = res.documents || [];
+                if (docs.length === 0) {
+                    await newPatient();
+                    return;
+                }
+                select.innerHTML = docs.map(d => `<option value="${d.$id}">${escapeHtml(d.name || 'Unbenannt')}</option>`).join('');
+                await selectPatient(docs[0].$id);
+            } catch (e) {
+                showToast(`Laden fehlgeschlagen: ${e.message}`, 'error');
+            }
+        }
+
+        async function selectPatient(id) {
+            try {
+                const doc = await databases.getDocument(APPWRITE.databaseId, APPWRITE.collectionId, id);
+                activePatientId = id;
+                document.getElementById('patientSelect').value = id;
+                suppressAutosave = true;
+                clearFormFields();
+                document.getElementById('interviewDate').value = new Date().toISOString().split('T')[0];
+                if (doc.data) {
+                    try { restoreFormData(JSON.parse(doc.data)); } catch (_) {}
+                }
+                suppressAutosave = false;
+                document.getElementById('resultSection').classList.remove('visible');
+            } catch (e) {
+                showToast(`Bewohner:in konnte nicht geladen werden: ${e.message}`, 'error');
+            }
+        }
+
+        function onPatientSelectChange() {
+            const id = document.getElementById('patientSelect').value;
+            if (id) selectPatient(id);
+        }
+
+        async function newPatient() {
+            if (!currentUser) return;
+            try {
+                const perms = [
+                    AW.Permission.read(AW.Role.user(currentUser.$id)),
+                    AW.Permission.update(AW.Role.user(currentUser.$id)),
+                    AW.Permission.delete(AW.Role.user(currentUser.$id))
+                ];
+                suppressAutosave = true;
+                clearFormFields();
+                document.getElementById('interviewDate').value = new Date().toISOString().split('T')[0];
+                suppressAutosave = false;
+                const payload = { name: 'Neue:r Bewohner:in', data: JSON.stringify(collectFormData()) };
+                const doc = await databases.createDocument(APPWRITE.databaseId, APPWRITE.collectionId, AW.ID.unique(), payload, perms);
+                activePatientId = doc.$id;
+                const select = document.getElementById('patientSelect');
+                const opt = document.createElement('option');
+                opt.value = doc.$id;
+                opt.textContent = doc.name;
+                select.prepend(opt);
+                select.value = doc.$id;
+                document.getElementById('resultSection').classList.remove('visible');
+                showToast('Neue:r Bewohner:in angelegt', 'success');
+                document.getElementById('patientName').focus();
+            } catch (e) {
+                showToast(`Anlegen fehlgeschlagen: ${e.message}`, 'error');
+            }
+        }
+
+        async function saveActivePatient(explicit) {
+            if (!currentUser || !activePatientId) {
+                if (explicit) showToast('Kein:e Bewohner:in ausgewählt', 'error');
+                return;
+            }
+            const formData = collectFormData();
+            const name = (formData.meta.patientName || '').trim() || 'Unbenannt';
+            try {
+                await databases.updateDocument(APPWRITE.databaseId, APPWRITE.collectionId, activePatientId, {
+                    name,
+                    data: JSON.stringify(formData)
+                });
+                const opt = document.querySelector(`#patientSelect option[value="${activePatientId}"]`);
+                if (opt) opt.textContent = name;
+                if (explicit) showToast('Gespeichert', 'success');
+                else showAutosaveIndicator();
+            } catch (e) {
+                if (explicit) showToast(`Speichern fehlgeschlagen: ${e.message}`, 'error');
+            }
+        }
+
+        async function deleteActivePatient() {
+            if (!activePatientId) return;
+            if (!confirm('Diese:n Bewohner:in wirklich löschen? Alle erfassten Daten gehen verloren.')) return;
+            try {
+                await databases.deleteDocument(APPWRITE.databaseId, APPWRITE.collectionId, activePatientId);
+                activePatientId = null;
+                showToast('Gelöscht', 'info');
+                await loadPatients();
+            } catch (e) {
+                showToast(`Löschen fehlgeschlagen: ${e.message}`, 'error');
+            }
+        }
+
+        // ============================================
+        // Risiko Matrix Table
+        // ============================================
+
+        function initRisikoTable() {
+            const tbody = document.getElementById('risikoTableBody');
+            let html = '';
+
+            THEMENFELDER.forEach((themenfeld, tfIndex) => {
+                html += `
+                    <tr>
+                        <td>${tfIndex + 1}. ${themenfeld}</td>
+                        ${RISIKEN.map((risiko, rIndex) => `
+                            <td>
+                                <div class="risiko-options">
+                                    <label class="risiko-option">
+                                        <input type="radio" name="risiko_${tfIndex}_${rIndex}" value="ja">
+                                        <span>Ja</span>
+                                    </label>
+                                    <label class="risiko-option">
+                                        <input type="radio" name="risiko_${tfIndex}_${rIndex}" value="nein">
+                                        <span>Nein</span>
+                                    </label>
+                                </div>
+                                <div class="risiko-checkbox" style="margin-top: 0.3rem;">
+                                    <label class="risiko-option">
+                                        <input type="checkbox" name="weitere_${tfIndex}_${rIndex}">
+                                        <span style="font-size: 0.65rem;">Weitere Einschätzung</span>
+                                    </label>
+                                </div>
+                            </td>
+                        `).join('')}
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // ============================================
+        // Form data collection & Autosave
+        // ============================================
+
+        function collectFormData() {
+            const data = {
+                meta: {
+                    patientName: document.getElementById('patientName').value,
+                    birthDate: document.getElementById('birthDate').value,
+                    interviewDate: document.getElementById('interviewDate').value,
+                    nurseSign: document.getElementById('nurseSign').value
+                },
+                oTon: document.getElementById('oTon').value,
+                themenfelder: {},
+                risiken: {},
+                sonstigesLabel: (document.getElementById('sonstigesLabel')?.value || '')
+            };
+
+            // Collect Themenfelder
+            for (let i = 1; i <= 6; i++) {
+                data.themenfelder[i] = document.getElementById(`themenfeld${i}`).value;
+            }
+
+            // Collect Risiken
+            THEMENFELDER.forEach((_, tfIndex) => {
+                data.risiken[tfIndex] = {};
+                RISIKEN.forEach((risiko, rIndex) => {
+                    const radioName = `risiko_${tfIndex}_${rIndex}`;
+                    const checkboxName = `weitere_${tfIndex}_${rIndex}`;
+                    const selectedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
+                    const checkbox = document.querySelector(`input[name="${checkboxName}"]`);
+                    data.risiken[tfIndex][rIndex] = {
+                        value: selectedRadio ? selectedRadio.value : null,
+                        weitere: checkbox ? checkbox.checked : false
+                    };
+                });
+            });
+
+            return data;
+        }
+
+        function restoreFormData(data) {
+            if (data.meta) {
+                document.getElementById('patientName').value = data.meta.patientName || '';
+                document.getElementById('birthDate').value = data.meta.birthDate || '';
+                document.getElementById('interviewDate').value = data.meta.interviewDate || '';
+                document.getElementById('nurseSign').value = data.meta.nurseSign || '';
+            }
+
+            if (data.oTon) {
+                document.getElementById('oTon').value = data.oTon;
+            }
+
+            if (data.themenfelder) {
+                for (let i = 1; i <= 6; i++) {
+                    if (data.themenfelder[i]) {
+                        document.getElementById(`themenfeld${i}`).value = data.themenfelder[i];
+                    }
+                }
+            }
+
+            if (typeof data.sonstigesLabel === 'string') {
+                const lbl = document.getElementById('sonstigesLabel');
+                if (lbl) lbl.value = data.sonstigesLabel;
+            }
+
+            if (data.risiken) {
+                Object.keys(data.risiken).forEach(tfIndex => {
+                    Object.keys(data.risiken[tfIndex]).forEach(rIndex => {
+                        const risikoData = data.risiken[tfIndex][rIndex];
+                        if (!risikoData) return;
+                        if (risikoData.value) {
+                            const radio = document.querySelector(`input[name="risiko_${tfIndex}_${rIndex}"][value="${risikoData.value}"]`);
+                            if (radio) radio.checked = true;
+                        }
+                        if (risikoData.weitere) {
+                            const checkbox = document.querySelector(`input[name="weitere_${tfIndex}_${rIndex}"]`);
+                            if (checkbox) checkbox.checked = true;
+                        }
+                    });
+                });
+            }
+        }
+
+        function setupAutosave() {
+            const inputs = document.querySelectorAll('#appMain input, #appMain textarea');
+            inputs.forEach(input => {
+                const handler = () => {
+                    if (suppressAutosave || !activePatientId) return;
+                    clearTimeout(autosaveTimeout);
+                    autosaveTimeout = setTimeout(() => saveActivePatient(false), 900);
+                };
+                input.addEventListener('input', handler);
+                input.addEventListener('change', handler);
+            });
+        }
+
+        function showAutosaveIndicator() {
+            const indicator = document.getElementById('autosaveIndicator');
+            indicator.classList.add('visible');
+            setTimeout(() => indicator.classList.remove('visible'), 2000);
+        }
+
+        // ============================================
+        // Admin Panel
+        // ============================================
+
+        function openAdminModal() {
+            document.getElementById('adminModal').classList.add('visible');
+            const systemPrompt = localStorage.getItem('sis_system_prompt') || DEFAULT_SYSTEM_PROMPT;
+            document.getElementById('systemPrompt').value = systemPrompt;
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.remove('visible');
+        }
+
+        function saveAdminSettings() {
+            const systemPrompt = document.getElementById('systemPrompt').value.trim() || DEFAULT_SYSTEM_PROMPT;
+            localStorage.setItem('sis_system_prompt', systemPrompt);
+            showToast('Einstellungen gespeichert', 'success');
+            closeAdminModal();
+        }
+
+        function checkApiKeyStatus() {
+            // Der Claude API Key liegt serverseitig (Vercel-Umgebungsvariable),
+            // daher ist kein Client-seitiger Key mehr nötig – Button immer aktiv.
+            const generateBtn = document.getElementById('generateBtn');
+            generateBtn.disabled = false;
+            generateBtn.title = '';
+        }
+
+        // ============================================
+        // UI Interactions
+        // ============================================
+
+        function toggleThemenfeld(header) {
+            const card = header.closest('.themenfeld-card');
+            card.classList.toggle('collapsed');
+        }
+
+        // ============================================
+        // API Integration
+        // ============================================
+
+        async function generatePlan() {
+            const formData = collectFormData();
+
+            // Validate minimum data
+            if (!formData.oTon && !Object.values(formData.themenfelder).some(v => v)) {
+                showToast('Bitte mindestens den O-Ton oder ein Themenfeld ausfüllen', 'error');
+                return;
+            }
+
+            // Build the message for the API
+            const message = buildApiMessage(formData);
+            const systemPrompt = localStorage.getItem('sis_system_prompt') || DEFAULT_SYSTEM_PROMPT;
+
+            // Show loading
+            document.getElementById('loadingOverlay').classList.add('visible');
+
+            try {
+                // Aufruf an den serverseitigen Proxy (/api/generate) – der Claude
+                // API Key liegt als Vercel-Umgebungsvariable und bleibt serverseitig.
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ system: systemPrompt, message })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error?.message || 'API Fehler');
+                }
+
+                const plan = data.text;
+
+                // Display result
+                displayResult(plan);
+                showToast('Maßnahmenplan erfolgreich erstellt', 'success');
+
+            } catch (error) {
+                console.error('API Error:', error);
+                showToast(`Fehler: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('loadingOverlay').classList.remove('visible');
+            }
+        }
+
+        function buildApiMessage(formData) {
+            let message = '# Strukturierte Informationssammlung (SIS)\n\n';
+
+            // Meta
+            message += '## Stammdaten\n';
+            message += `- **Name:** ${formData.meta.patientName || 'Nicht angegeben'}\n`;
+            message += `- **Geburtsdatum:** ${formData.meta.birthDate || 'Nicht angegeben'}\n`;
+            message += `- **Gespräch am:** ${formData.meta.interviewDate || 'Nicht angegeben'}\n`;
+            message += `- **Handzeichen:** ${formData.meta.nurseSign || 'Nicht angegeben'}\n\n`;
+
+            // O-Ton
+            message += '## O-Ton der pflegebedürftigen Person\n';
+            message += `"${formData.oTon || 'Keine Angaben'}"\n\n`;
+
+            // Themenfelder
+            const themenfeldNames = [
+                'Kognitive und kommunikative Fähigkeiten',
+                'Mobilität und Beweglichkeit',
+                'Krankheitsbezogene Anforderungen und Belastungen',
+                'Selbstversorgung',
+                'Leben in sozialen Beziehungen',
+                'Wohnen/Häuslichkeit'
+            ];
+
+            message += '## Themenfelder\n\n';
+            for (let i = 1; i <= 6; i++) {
+                message += `### ${i}. ${themenfeldNames[i-1]}\n`;
+                message += `${formData.themenfelder[i] || 'Keine Angaben'}\n\n`;
+            }
+
+            // Risikomatrix
+            message += '## Risikomatrix\n\n';
+            const sonstigesLabel = (formData.sonstigesLabel || '').trim().replace(/\r?\n/g, ' ').replace(/\|/g, '/');
+            const headerCols = RISIKEN.map(r => (r === 'Sonstiges' && sonstigesLabel) ? `Sonstiges (${sonstigesLabel})` : r);
+            message += '| Themenfeld | ' + headerCols.join(' | ') + ' |\n';
+            message += '|' + ' --- |'.repeat(headerCols.length + 1) + '\n';
+
+            THEMENFELDER.forEach((tf, tfIndex) => {
+                let row = `| ${tfIndex + 1}. ${tf} |`;
+                RISIKEN.forEach((risikoName, rIndex) => {
+                    const risiko = formData.risiken[tfIndex]?.[rIndex];
+                    let cell = risiko?.value || '-';
+                    if (risiko?.weitere) cell += ' (!)';
+                    cell = cell.replace(/\r?\n/g, ' ').replace(/\|/g, '/');
+                    row += ` ${cell} |`;
+                });
+                message += row + '\n';
+            });
+
+            message += '\n*Hinweis: (!) = weitere Einschätzung notwendig*\n\n';
+            message += '---\n\n';
+            message += 'Bitte erstelle auf Basis dieser Informationen einen individuellen Maßnahmenplan.';
+
+            return message;
+        }
+
+        function displayResult(content) {
+            const resultSection = document.getElementById('resultSection');
+            const resultContent = document.getElementById('resultContent');
+
+            // Convert markdown to HTML (basic conversion)
+            let html = content
+                .replace(/^### (.*$)/gim, '<h4>$1</h4>')
+                .replace(/^## (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^# (.*$)/gim, '<h3>$1</h3>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^\- (.*$)/gim, '<li>$1</li>')
+                .replace(/^\d+\. (.*$)/gim, '<li>$1</li>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+
+            // Wrap lists
+            html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+            html = html.replace(/<\/ul>\s*<ul>/g, '');
+
+            resultContent.innerHTML = `<p>${html}</p>`;
+            resultSection.classList.add('visible');
+
+            // Scroll to result
+            resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ============================================
+        // Share & Copy
+        // ============================================
+
+        function copyResult() {
+            const resultContent = document.getElementById('resultContent');
+            const text = resultContent.innerText;
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Maßnahmenplan in Zwischenablage kopiert', 'success');
+            }).catch(() => {
+                showToast('Kopieren fehlgeschlagen', 'error');
+            });
+        }
+
+        async function shareResult() {
+            const resultContent = document.getElementById('resultContent');
+            const text = resultContent.innerText;
+            const patientName = document.getElementById('patientName').value || 'Unbekannt';
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: `Maßnahmenplan - ${patientName}`,
+                        text: text
+                    });
+                    showToast('Erfolgreich geteilt', 'success');
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        copyResult(); // Fallback to copy
+                    }
+                }
+            } else {
+                copyResult(); // Fallback to copy
+            }
+        }
+
+        // ============================================
+        // Toast Notifications
+        // ============================================
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+
+            const icons = {
+                success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+                error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+                info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <span class="toast-message">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'toastIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Close modal on outside click
+        document.getElementById('adminModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('adminModal')) {
+                closeAdminModal();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeAdminModal();
+            }
+        });
+    </script>
+</body>
+</html>
