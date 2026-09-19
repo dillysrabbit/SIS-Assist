@@ -1,7 +1,7 @@
 {
   "name": "SIS Assist",
   "short_name": "SIS Assist",
-  "description": "SIS® – Strukturierte Informationssammlung für die digitale Pflegedokumentation",
+  "description": "Pflegeprozess-Werkzeug nach Strukturmodell: SIS, Maßnahmenplan, Bericht (Abweichung), Evaluation",
   "lang": "de",
   "start_url": "/",
   "scope": "/",
