@@ -451,9 +451,25 @@ function vStart(b){
   const todos = checkHandlungsbedarf(b);
   const b14 = b.berichte.filter(e=>daysSince(e.ts)<=14);
   const letzteEval = b.evaluationen.length ? Math.max(...b.evaluationen.map(e=>e.ts)) : null;
-  const letzte = b.berichte.slice().sort((a,c)=>c.ts-a.ts).slice(0,5);
+  const cutoff = Date.now() - 86400000;
+  const b24h = b.berichte.filter(e=>e.ts>=cutoff).sort((a,c)=>c.ts-a.ts);
+  const andere = store.bewohner.filter(x=>x.id!==b.id)
+    .map(x=>({id:x.id, name:x.name, n:x.berichte.filter(e=>e.ts>=cutoff).length}))
+    .filter(o=>o.n>0);
+  const h = new Date().getHours();
+  const gruss = h<5?'Gute Nacht':h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend';
   return `
-  <div class="kpis">
+  <div class="section-head spread" style="margin-top:4px">
+    <div><h2>${gruss}.</h2>
+    <span class="faint">Berichteblatt der letzten 24 Stunden · ${esc(b.name)} – Deine Übergabe.</span></div>
+    <button class="btn small primary" data-goto-bericht-neu>+ Eintrag</button>
+  </div>
+  ${b24h.length ? b24h.map(e=>bEntry(b,e,false)).join('') :
+    '<div class="immerso"><h3>Keine besonderen Vorkommnisse</h3><p style="margin:0">In den letzten 24 Stunden wurde nichts berichtet. Wenn alles nach Plan lief, ist das genau richtig – die Regelversorgung weist der Maßnahmenplan nach (Immer-so-Prinzip).</p></div>'}
+  ${andere.length ? '<div class="hint" style="margin:10px 0 0">In den letzten 24 Stunden außerdem: '+
+    andere.map(o=>'<button class="btn small ghost" data-switch="'+o.id+'" style="padding:2px 8px">'+esc(o.name)+' <span class="num">('+o.n+')</span></button>').join(' ')+'</div>':''}
+
+  <div class="kpis" style="margin-top:22px">
     <div class="kpi"><div class="v num">${todos.length}<span class="dot">.</span></div><div class="l">Offene Punkte</div></div>
     <div class="kpi"><div class="v num">${b.massnahmen.filter(m=>m.status==='aktiv').length}<span class="dot">.</span></div><div class="l">Aktive Maßnahmen</div></div>
     <div class="kpi"><div class="v num">${b14.length}<span class="dot">.</span></div><div class="l">Berichte · 14 Tage</div></div>
@@ -466,9 +482,7 @@ function vStart(b){
       <button class="btn small" data-goto="${t.tab}">Öffnen</button>
     </div>`).join('') :
     '<div class="immerso"><h3>Alles im grünen Bereich</h3><p style="margin:0">SIS, Plan, Bericht und Evaluation sind konsistent – keine offenen Punkte. Die Regelversorgung weist der Plan nach (Immer-so-Prinzip).</p></div>'}
-  <div class="section-head spread"><h2>Letzte Berichtseinträge</h2>
-    <button class="btn small primary" data-goto-bericht-neu>+ Eintrag</button></div>
-  ${letzte.length ? letzte.map(e=>bEntry(b,e,true)).join('') : '<div class="empty">Noch keine Einträge – gut möglich, dass das richtig ist: Routine gehört nicht ins Berichteblatt.</div>'}`;
+`;
 }
 
 /* ---------- SIS ---------- */
@@ -927,6 +941,7 @@ function wizEval(){
 function bindPanel(b){
   const p = el('panel');
   p.querySelectorAll('[data-goto]').forEach(btn=>btn.onclick=()=>{ tab=btn.dataset.goto; render(); window.scrollTo({top:0}); });
+  p.querySelectorAll('[data-switch]').forEach(btn=>btn.onclick=()=>{ store.activeId=btn.dataset.switch; persist(); render(); window.scrollTo({top:0}); });
   const bn = p.querySelector('[data-goto-bericht-neu]'); if(bn) bn.onclick = wizBericht;
   /* SIS */
   const bindTxt = (id, fn) => { const n = el(id); if(n) n.oninput = e=>{ fn(e.target.value); save(); }; };
