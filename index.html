@@ -178,6 +178,29 @@ details.warum .wq{display:block; margin-top:6px; font-size:11.5px; color:var(--i
 .zeit-h:first-child{margin-top:0}
 .zeit-h .zn{color:var(--gold);}
 
+/* Formulierungshilfe (Maßnahmenkompendium) */
+.fh{border:1px solid var(--line-strong); border-radius:6px; background:var(--paper2); margin-top:10px; padding:10px 12px;}
+.fh[hidden]{display:none}
+.fh .fh-scroll{max-height:min(44vh,420px); overflow-y:auto; margin-top:8px; padding-right:2px;}
+.fh .fh-sec{font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint); margin:10px 0 6px;}
+.fh .fh-sec:first-child{margin-top:2px}
+.fh-chip{appearance:none; border:1px solid var(--line-strong); background:var(--paper); color:var(--ink); border-radius:99px; padding:4px 11px; font-size:12.5px; font-weight:500;}
+.fh-chip:hover{border-color:var(--ink-faint)}
+.fh-chip.pass{border-color:var(--accent); color:var(--accent); background:var(--accent-50);}
+.fh-chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600;}
+.fh-el{display:block; width:100%; text-align:left; appearance:none; border:1px solid var(--line); background:var(--paper); border-radius:6px; padding:8px 11px; font-size:14px; color:var(--ink); margin-bottom:6px;}
+.fh-el:hover{border-color:var(--accent)}
+.fh-el .no{color:var(--gold-dark); font-variant-numeric:tabular-nums; font-weight:600; font-size:12px; margin-right:6px;}
+.fh-s{display:block; width:100%; text-align:left; appearance:none; border:1px solid var(--line); background:var(--paper); border-radius:6px; padding:9px 11px; font-size:13.5px; line-height:1.5; color:var(--ink); margin-bottom:6px;}
+.fh-s:hover{border-color:var(--accent); background:var(--accent-50);}
+.fh-s .src{display:block; font-size:11.5px; color:var(--ink-faint); margin-top:3px;}
+.fh-g{font-family:'Newsreader',Georgia,serif; font-size:15px; margin:10px 0 6px; color:var(--ink-soft);}
+mark.ph{background:var(--gold-50); color:var(--gold-dark); border-bottom:1px dashed var(--gold-dark); padding:0 2px; border-radius:2px;}
+.fh-intro{font-size:13px; color:var(--ink-soft); margin:0 0 8px; max-width:70ch;}
+.fh details.warum{margin:6px 0 2px}
+.fh-foot{font-size:11.5px; color:var(--ink-faint); margin-top:8px; border-top:1px dashed var(--line); padding-top:6px;}
+.m-card .pill.gold.ph-open{cursor:help}
+
 /* Handlungsbedarf */
 .todo{display:flex; gap:10px; align-items:flex-start; padding:11px 14px; border:1px solid var(--line); border-left:3px solid var(--crit); border-radius:0 6px 6px 0; background:var(--paper2); margin-bottom:8px;}
 .todo.warn{border-left-color:var(--warn)}
@@ -247,6 +270,7 @@ footer{border-top:1px solid var(--line); margin-top:48px; padding-top:14px;}
 <div class="modal-bg" id="modalBg"><div class="modal" id="modalBox" role="dialog" aria-modal="true"></div></div>
 <div id="toasts"></div>
 
+<script src="kompendium.js"></script>
 <script>
 'use strict';
 /* ================= Konstanten ================= */
@@ -301,6 +325,7 @@ const WARUM = {
   sachlich: {t:'Beobachtung statt Etikett: „lehnt Frühstück und Mittagessen ab, schiebt Teller weg“ statt „bockig“. Jeder Eintrag ist potenziell gelesener Text – Bewohner:in, Angehörige und Betreuungsgericht haben Einsichtsrecht.', q:'§ 630f, § 630g BGB; Art. 15 DSGVO'},
   evalAnlass: {t:'Das Strukturmodell ersetzt starre Fristen durch zwei Trigger: den Anlass (Ereignis, Veränderung, Klinik, neues Risiko) und die interne Regel als Sicherheitsnetz für schleichende Veränderungen. Datum und Handzeichen machen die Evaluation als bewussten fachlichen Akt erkennbar – nicht als stillschweigendes „passt schon“.', q:'Handbuch Strukturmodell (Element 4); § 4 PflBG'},
   evalWirkung: {t:'„Maßnahme fortführen“ als Dauerschleife ohne Begründung ist keine Evaluation, sondern ein Abhak-Ritual. Wirksamkeit braucht einen Bezugspunkt: Woran zeigt sich Erfolg – Gewicht stabil, keine neuen Stürze, kommt wieder zum Mittagstisch? Wo etwas nicht wirkt, ist genau das der wertvollste Befund.', q:'DNQP-Expertenstandards; QPR 2024'},
+  formulierung: {t:'Musterformulierungen sichern Fachsprache und Vollständigkeit (Was, wie, wann, Eigenanteil, Hilfsmittel) – aber sie sind Beispiele, keine Standards. Intervalle, Hilfsmittel und Skalenwerte in eckigen Klammern sind Platzhalter: Erst die Anpassung an diese Person macht aus dem Baustein eine Maßnahme. Ein Plan aus unveränderten Bausteinen ist der „Standardtag“, den das Strukturmodell gerade vermeiden will.', q:'Health Angels Maßnahmenkompendium (DNQP-Expertenstandards); Handbuch Strukturmodell (Element 2)'},
   evalKonsequenz: {t:'Eine Evaluation ohne Konsequenz ist Dokumentationsfolklore. Das Ergebnis muss nachvollziehbar zu SIS, Matrix und Plan zurückfließen. Auch das begründete „keine Änderung erforderlich“ ist eine legitime Konsequenz – aber als Entscheidung erkennbar, nicht als Schweigen.', q:'Handbuch Strukturmodell; MuG nach § 113 SGB XI'}
 };
 
@@ -369,6 +394,8 @@ function checkHandlungsbedarf(b){
   b.massnahmen.filter(m=>m.status==='aktiv').forEach(m=>{
     if(!m.bezug.risiken.length && !m.bezug.felder.length)
       out.push({lvl:'warn', tab:'plan', t:'Maßnahme „'+m.titel+'“ hat keinen Bezug zu SIS oder Risikomatrix.', s:'Keine Maßnahme ohne erhobene Grundlage – sonst ist die Ableitung nicht nachvollziehbar.'});
+    if(hatPlatzhalter(m))
+      out.push({lvl:'warn', tab:'plan', t:'Maßnahme „'+m.titel+'“ enthält noch Beispielangaben in eckigen Klammern.', s:'Platzhalter aus dem Kompendium (Intervalle, Hilfsmittel, Uhrzeiten) müssen für diese Person festgelegt werden – sonst ist der Plan nicht handlungsleitend.'});
   });
   b.berichte.filter(e=>e.reaktion && e.reaktion.folgen && !e.erledigt).forEach(e=>{
     out.push({lvl:'crit', tab:'bericht', t:'Rückkopplung offen: „'+(e.text.length>60?e.text.slice(0,60)+'…':e.text)+'“', s:'Du hast markiert, dass dieses Ereignis Folgen für SIS oder Plan hat – die Anpassung steht noch aus.', id:e.id});
@@ -581,7 +608,7 @@ function vPlan(b){
         const n = abwCount(m);
         return `<div class="m-card">
           <div class="m-top"><h3>${esc(m.titel)}</h3>
-            <span class="row">${n?'<span class="pill gold num">'+n+' Abw. seit Eval</span>':''}
+            <span class="row">${hatPlatzhalter(m)?'<span class="pill gold ph-open" title="Beispielangaben in eckigen Klammern noch festlegen">Platzhalter offen</span>':''}${n?'<span class="pill gold num">'+n+' Abw. seit Eval</span>':''}
             <button class="btn small ghost" data-medit="${m.id}">Bearbeiten</button></span></div>
           ${m.wie?'<div class="m-wie">'+esc(m.wie)+'</div>':''}
           ${m.eigen?'<div class="hint" style="margin-bottom:6px">Eigenaktivität: '+esc(m.eigen)+'</div>':''}
@@ -839,7 +866,8 @@ function wizMassnahme(mid){
     <input type="text" id="mTitel" value="${esc(m?m.titel:'')}" placeholder="z. B. Begleitung zum Mittagstisch"></div>
   <div class="field"><label class="fl" for="mWie">Wie genau? Hilfsmittel, Besonderheiten</label>
     <textarea id="mWie" placeholder="z. B.: Transfer mit Rollator und Begleitung einer Person, Abstützen rechts wegen Hemiparese links.">${esc(m?m.wie:'')}</textarea>
-    <div class="hint">„Mobilisation nach Bedarf“ ist nicht handlungsleitend – Details gehören hierher, nicht in den Kopf des Wohnbereichs.</div></div>
+    <div class="hint">„Mobilisation nach Bedarf“ ist nicht handlungsleitend – Details gehören hierher, nicht in den Kopf des Wohnbereichs.</div>
+    ${window.KOMPENDIUM ? '<div class="row" style="margin-top:8px"><button type="button" class="btn small" id="fhToggle" aria-expanded="false">Formulierungshilfe</button><span class="faint">Musterformulierungen aus dem Maßnahmenkompendium</span></div><div class="fh" id="fhBox" hidden></div>' : ''}</div>
   <div class="field"><label class="fl" for="mEigen">Was übernimmt die Person selbst?</label>
     <input type="text" id="mEigen" value="${esc(m?m.eigen:'')}" placeholder="z. B. wäscht Gesicht und Oberkörper selbständig"></div>
   <div class="field"><label class="fl">Wann? (Tagesstruktur)</label>
@@ -870,10 +898,93 @@ function wizMassnahme(mid){
       b.massnahmen.push({id:uid(), titel, wie:el('mWie').value.trim(), eigen:el('mEigen').value.trim(), zeiten,
         bezug:{risiken:bezR, felder:bezF}, status:'aktiv', created:Date.now(), updated:Date.now()});
     }
-    persist(); closeModal(); render(); toast(m?'Maßnahme aktualisiert.':'Maßnahme angelegt.');
+    persist(); closeModal(); render();
+    const neu = m || b.massnahmen[b.massnahmen.length-1];
+    if(hatPlatzhalter(neu)) toast('Gespeichert – Beispielangaben in eckigen Klammern bitte noch für diese Person festlegen.');
+    else toast(m?'Maßnahme aktualisiert.':'Maßnahme angelegt.');
   };
+  const fhT = el('fhToggle'); if(fhT) fhT.onclick = ()=>{ const box = el('fhBox'); const open = box.hidden; box.hidden = !open; fhT.setAttribute('aria-expanded', String(open)); if(open){ fhReset(); fhRender(b); } };
   const end = el('mEnd'); if(end) end.onclick = ()=>{ m.status='beendet'; m.updated=Date.now(); persist(); closeModal(); render(); toast('Maßnahme beendet.'); };
   const rea = el('mReakt'); if(rea) rea.onclick = ()=>{ m.status='aktiv'; m.updated=Date.now(); persist(); closeModal(); render(); };
+}
+
+/* --- Formulierungshilfe aus dem Maßnahmenkompendium --- */
+const PH_RE = /\[[^\]\n]{1,80}\]/;
+function hatPlatzhalter(m){ return PH_RE.test(m.titel||'') || PH_RE.test(m.wie||'') || PH_RE.test(m.eigen||''); }
+function phHtml(t){ return esc(t).replace(/⟦/g,'<mark class="ph">').replace(/⟧/g,'</mark>'); }
+function phPlain(t){ return t.replace(/⟦/g,'[').replace(/⟧/g,']'); }
+let fh = {kap:null, el:null, q:''};
+function fhReset(){ fh = {kap:null, el:null, q:''}; }
+function fhKapitel(){ return (window.KOMPENDIUM && KOMPENDIUM.kapitel || []).filter(c=>c.art==='plan'); }
+/* Passende Kapitel: aus dem gerade angehakten Bezug im Editor und den bejahten Risiken der SIS */
+function fhPassend(b){
+  const chk = id => el(id) ? Array.from(el(id).querySelectorAll('input:checked')).map(x=>x.value) : [];
+  const risk = new Set(chk('mBezR').concat(RISK.filter(r=>b.sis.risiken[r.k].s==='ja').map(r=>r.k)));
+  const feld = new Set(chk('mBezF'));
+  return new Set(fhKapitel().filter(c=> c.risiken.some(k=>risk.has(k)) || c.felder.some(k=>feld.has(k))).map(c=>c.k));
+}
+function fhRender(b){
+  const box = el('fhBox'); if(!box) return;
+  const kap = fhKapitel();
+  let html = '<input type="text" id="fhQ" placeholder="Suchen, z. B. Positionswechsel, Trinkmenge, Rollator …" value="'+esc(fh.q)+'" autocomplete="off">';
+  html += '<div class="fh-scroll">';
+  const q = fh.q.trim().toLowerCase();
+  if(q.length>=3){
+    const tok = q.split(/\s+/);
+    const hits = [];
+    kap.forEach(c=>c.elemente.forEach(e=>e.saetze.forEach((sz,i)=>{
+      const hay = (sz.t+' '+e.name+' '+c.kurz).toLowerCase();
+      if(tok.every(t=>hay.includes(t))) hits.push({c,e,i,sz});
+    })));
+    html += '<div class="fh-sec">'+(hits.length? Math.min(hits.length,60)+(hits.length>60?' von '+hits.length:'')+' Treffer':'Keine Treffer')+'</div>';
+    html += hits.slice(0,60).map(h=>'<button type="button" class="fh-s" data-fhs="'+h.c.k+'|'+h.e.k+'|'+h.i+'">'+phHtml(h.sz.t)+'<span class="src">'+esc(h.c.kurz)+' › '+esc(h.e.nr+' '+h.e.name)+'</span></button>').join('');
+  } else {
+    const pass = fhPassend(b);
+    const sorted = kap.slice().sort((a,c)=> (pass.has(c.k)-pass.has(a.k)) || (a.nr-c.nr));
+    html += '<div class="fh-sec">'+(pass.size?'Themen – passend zum Bezug zuerst':'Themen')+'</div><div class="row">'+
+      sorted.map(c=>'<button type="button" class="fh-chip'+(pass.has(c.k)?' pass':'')+'" data-fhk="'+c.k+'" aria-pressed="'+(fh.kap===c.k)+'">'+esc(c.kurz)+'</button>').join('')+'</div>';
+    const c = kap.find(x=>x.k===fh.kap);
+    if(c){
+      html += '<div class="fh-sec">'+esc(c.name)+'</div>';
+      const e = c.elemente.find(x=>x.k===fh.el);
+      if(!e){
+        html += c.elemente.map(x=>'<button type="button" class="fh-el" data-fhe="'+x.k+'"><span class="no">'+esc(x.nr)+'</span>'+esc(x.name)+' <span class="faint">· '+x.saetze.length+'</span></button>').join('');
+      } else {
+        html += '<button type="button" class="btn small ghost" data-fhe="" style="margin-bottom:6px">← Alle Elemente</button>';
+        html += '<div class="fh-g" style="margin-top:0"><span class="no" style="color:var(--gold-dark);font-size:12px;font-weight:600">'+esc(e.nr)+'</span> '+esc(e.name)+'</div>';
+        if(e.intro) html += '<p class="fh-intro">'+esc(e.intro)+'</p>';
+        let g = null;
+        e.saetze.forEach((sz,i)=>{
+          if(sz.g && sz.g!==g){ g = sz.g; html += '<div class="fh-g">'+esc(g)+'</div>'; }
+          html += '<button type="button" class="fh-s" data-fhs="'+c.k+'|'+e.k+'|'+i+'">'+phHtml(sz.t)+'</button>';
+        });
+        if(e.hinweise && e.hinweise.length) html += '<details class="warum"><summary>Hinweise zur Dokumentation</summary><div class="wb"><ul style="margin:6px 0 0;padding-left:18px">'+e.hinweise.map(h=>'<li>'+esc(h)+'</li>').join('')+'</ul></div></details>';
+      }
+    } else {
+      html += '<div class="hint" style="margin-top:8px">Thema wählen oder suchen. Klick auf eine Formulierung übernimmt sie in „Wie genau?“ – Platzhalter <mark class="ph">so</mark> markiert, im Text dann in eckigen Klammern.</div>';
+    }
+  }
+  html += '</div>'+warum('formulierung')+'<div class="fh-foot">Quelle: '+esc(KOMPENDIUM.quelle)+'. Beispiele, keine Standards – Intervalle, Hilfsmittel und Skalenwerte individuell festlegen.</div>';
+  box.innerHTML = html;
+  const qi = el('fhQ');
+  qi.oninput = ()=>{ fh.q = qi.value; const pos = qi.selectionStart; fhRender(b); const n = el('fhQ'); n.focus(); try{ n.setSelectionRange(pos,pos); }catch(e){} };
+  box.querySelectorAll('[data-fhk]').forEach(x=>x.onclick=()=>{ fh.kap = (fh.kap===x.dataset.fhk? null : x.dataset.fhk); fh.el=null; fhRender(b); });
+  box.querySelectorAll('[data-fhe]').forEach(x=>x.onclick=()=>{ fh.el = x.dataset.fhe || null; fhRender(b); box.querySelector('.fh-scroll').scrollTop = 0; });
+  box.querySelectorAll('[data-fhs]').forEach(x=>x.onclick=()=>{ const [ck,ek,i] = x.dataset.fhs.split('|'); fhInsert(b, ck, ek, +i); });
+}
+function fhInsert(b, ck, ek, i){
+  const c = fhKapitel().find(x=>x.k===ck); const e = c && c.elemente.find(x=>x.k===ek); const sz = e && e.saetze[i]; if(!sz) return;
+  const ta = el('mWie'); const txt = phPlain(sz.t);
+  ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/,'') + '\n' : '') + txt;
+  const ti = el('mTitel'); let info = [];
+  if(!ti.value.trim()){ ti.value = e.name; info.push('Titel vorgeschlagen'); }
+  /* Bezug ergänzen: Risiko aus der Matrix (nur wenn dort bejaht/offen) und Themenfelder des Kapitels */
+  const bez = [];
+  c.risiken.forEach(k=>{ const cb = el('mBezR') && el('mBezR').querySelector('input[value="'+k+'"]'); if(cb && !cb.checked){ cb.checked = true; bez.push(RISK.find(r=>r.k===k).name); } });
+  c.felder.forEach(k=>{ const cb = el('mBezF').querySelector('input[value="'+k+'"]'); if(cb && !cb.checked){ cb.checked = true; bez.push(TF.find(f=>f.k===k).name.split(' &')[0]); } });
+  if(bez.length) info.push('Bezug ergänzt: '+bez.join(', '));
+  toast('Übernommen'+(txt.includes('[')?' – Platzhalter in [ ] für diese Person festlegen':'')+(info.length?' · '+info.join(' · '):'')+'.');
+  ta.scrollTop = ta.scrollHeight;
 }
 
 /* --- Evaluations-Wizard --- */

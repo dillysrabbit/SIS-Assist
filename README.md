@@ -6,6 +6,8 @@
 Element. Daten liegen im Browser (localStorage), Export/Import als JSON.
 
 - `index.html` – das Pflegeprozess-Werkzeug (keine Abhängigkeiten, offline lauffähig)
+- `kompendium.js` – Maßnahmenkompendium als Datendatei (Formulierungshilfe im
+  Maßnahmen-Editor; generiert aus dem Health-Angels-Kompendium, nicht von Hand pflegen)
 - `legacy.html` – die bisherige SIS-Formular-App mit Appwrite-Login und
   KI-Generierung (siehe `SETUP-APPWRITE.md`, `api/`)
 - `r1/` – Rabbit-R1-Creation
