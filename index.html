@@ -160,6 +160,17 @@ details.warum .wq{display:block; margin-top:6px; font-size:11.5px; color:var(--i
 .risk-name{font-weight:500; min-width:110px;}
 .risk-detail{width:100%; margin-top:6px;}
 
+/* Themenfelder: geführte Eingabe */
+.tf-grp{margin-top:10px; padding-top:8px; border-top:1px solid var(--line);}
+.tf-grp .gname{font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:2px;}
+.asp{display:flex; align-items:center; justify-content:space-between; gap:6px 12px; flex-wrap:wrap; padding:5px 0;}
+.asp .al{font-size:14px; flex:1 1 150px;}
+.asp .bem{width:100%; margin:0 0 6px;}
+.asp .bem input{font-size:14px; padding:6px 9px;}
+.tf-prev{margin-top:12px; padding:10px 12px; background:var(--paper); border:1px dashed var(--line-strong); border-radius:6px; font-size:14.5px; line-height:1.55; white-space:pre-wrap;}
+.tf-prev.leer{color:var(--ink-faint); font-style:italic;}
+.tf-prev .pl{display:block; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:4px; font-style:normal;}
+
 /* Bericht-Liste */
 .b-entry{border:1px solid var(--line); border-radius:6px; background:var(--paper2); padding:12px 14px; margin-bottom:10px;}
 .b-entry .b-head{display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; margin-bottom:6px;}
@@ -271,6 +282,7 @@ footer{border-top:1px solid var(--line); margin-top:48px; padding-top:14px;}
 <div id="toasts"></div>
 
 <script src="kompendium.js"></script>
+<script src="themenfelder.js"></script>
 <script>
 'use strict';
 /* ================= Konstanten ================= */
@@ -315,7 +327,7 @@ const EVAL_INTERVALL_TAGE = 183; // interne Regel: halbjährlich
 /* Warum-Texte – destilliert aus dem Tutorial (Handbuch Strukturmodell v2.0, MD-Hinweise 11/2019, QPR 2024, BGB, PflBG) */
 const WARUM = {
   eingang: {t:'Die Person kommt zuerst zu Wort – wörtlich oder sinngemäß in ihrer Sprache. Floskeln („möchte gut versorgt werden“) liefern keine Steuerungsinformation. Bei kognitiven Einschränkungen tritt die Fremdauskunft hinzu – dann muss erkennbar sein, wessen Sicht hier steht.', q:'Handbuch Strukturmodell (Feld A); § 2 SGB XI'},
-  themenfelder: {t:'Die sechs Themenfelder sind der fachliche Blick der Pflegefachkraft: Risiken, Ressourcen und Bedarfe werden erzählt statt angekreuzt. Ein leeres oder mit „o. B.“ abgefertigtes Feld ist ein Einschätzungsverzicht. Eine fremde Fachkraft muss aus dem Text die konkrete Person erkennen.', q:'Handbuch Strukturmodell (Feld B); MD-Hinweise 2019'},
+  themenfelder: {t:'Die sechs Themenfelder sind der fachliche Blick der Pflegefachkraft: Risiken, Ressourcen und Bedarfe werden erzählt statt angekreuzt. Die Aspekte hier sind Gedankenstütze und Satzbaukasten – nicht die Einschätzung selbst. Erst die Bemerkung („findet den Weg zur Toilette nicht mehr“) macht aus dem Baustein einen Text, aus dem eine fremde Fachkraft die konkrete Person erkennt. Nicht Zutreffendes bleibt ungesetzt statt mit „o. B.“ abgefertigt; ein leeres Feld ist ein Einschätzungsverzicht.', q:'Handbuch Strukturmodell (Feld B); MD-Hinweise 2019'},
   matrix: {t:'Die Matrix ist die pflichtgemäße Risikoeinschätzung zu den Kernrisiken. „Weitere Einschätzung notwendig“ ist kein Makel, sondern der fachlich saubere Weg: erst differenziert einschätzen (Instrument oder begründete fachliche Einschätzung), dann entscheiden.', q:'Handbuch Strukturmodell (Feld C); DNQP-Expertenstandards'},
   ableitung: {t:'Der rote Faden des Pflegeprozesses: Jedes erkannte Risiko muss sich im Plan wiederfinden – und keine Maßnahme sollte ohne erhobene Grundlage im Plan stehen. Deshalb verlangt dieses Werkzeug für jede Maßnahme einen Bezug. Die Ableitung des Pflegeprozesses ist nach § 4 PflBG Fachkraft-Aufgabe.', q:'Handbuch Strukturmodell (Element 2); § 4 PflBG; QPR 2024'},
   tagesstruktur: {t:'Der Plan ist nicht nach Pflegeproblemen sortiert, sondern am gelebten Tag der Person entlang: Wer den Frühdienst übernimmt, liest in Minuten, wie diese Person ihren Morgen gestaltet. Ein „Standardtag“, der auf halb so viele Bewohner:innen genauso passt, verfehlt den Zweck.', q:'Handbuch Strukturmodell; § 2 SGB XI'},
@@ -337,7 +349,7 @@ let saveTimer = null;
 function load(){
   try{
     const raw = localStorage.getItem(LS_KEY);
-    if(raw){ const s = JSON.parse(raw); if(s && Array.isArray(s.bewohner)) return s; }
+    if(raw){ const s = JSON.parse(raw); if(s && Array.isArray(s.bewohner)) return migrate(s); }
   }catch(e){}
   return {v:1, hz:'', activeId:null, bewohner:[]};
 }
@@ -357,12 +369,12 @@ function nowLocal(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezo
 function daysSince(ts){ return Math.floor((Date.now()-ts)/86400000); }
 function rec(x){ return x.rec || x.ts; } // Aufnahmezeitpunkt (sekundengenau) für Werkzeug-Logik; ts bleibt die dokumentierte Zeit
 
-function neuBewohner(name){
+function neuBewohner(name, anrede){
   const b = {
-    id: uid(), name: name,
+    id: uid(), name: name, anrede: anrede||'neutral',
     sis: { anlass:'', datum:'', pfk:'',
       eingang:{text:'', quelle:'', fremdWer:''},
-      themenfelder:{tf1:'',tf2:'',tf3:'',tf4:'',tf5:'',tf6:''},
+      themenfelder: Object.fromEntries(TF.map(f=>[f.k, leererTf()])),
       risiken: Object.fromEntries(RISK.map(r=>[r.k,{s:'',text:'',label:''}])) },
     massnahmen:[], berichte:[], evaluationen:[]
   };
@@ -377,7 +389,7 @@ function checkHandlungsbedarf(b){
   const s = b.sis;
   if(!s.eingang.text.trim())
     out.push({lvl:'warn', tab:'sis', t:'Die Eingangsfrage ist noch unbeantwortet.', s:'Der Verständigungsprozess ist der personzentrierte Einstieg – die Sicht der Person kommt zuerst.'});
-  const leereTf = TF.filter(f=>!s.themenfelder[f.k].trim());
+  const leereTf = TF.filter(f=>!tfText(b,f.k).trim());
   if(s.eingang.text.trim() && leereTf.length)
     out.push({lvl:'warn', tab:'sis', t: leereTf.length+' von 6 Themenfeldern sind noch leer.', s:'Ein leeres Themenfeld ist ein Einschätzungsverzicht: '+leereTf.map(f=>f.name).join(', ')+'.'});
   RISK.forEach(r=>{
@@ -452,7 +464,7 @@ function renderBwBar(){
   if(!store.bewohner.length){ sel.innerHTML = '<option value="">– noch keine Bewohner:in –</option>'; sel.disabled = true; }
   else{
     sel.disabled = false;
-    sel.innerHTML = store.bewohner.map(b=>'<option value="'+b.id+'"'+(b.id===store.activeId?' selected':'')+'>'+esc(b.name)+'</option>').join('');
+    sel.innerHTML = store.bewohner.map(b=>'<option value="'+b.id+'"'+(b.id===store.activeId?' selected':'')+'>'+esc(anzeigeName(b))+'</option>').join('');
   }
 }
 
@@ -481,14 +493,14 @@ function vStart(b){
   const cutoff = Date.now() - 86400000;
   const b24h = b.berichte.filter(e=>e.ts>=cutoff).sort((a,c)=>c.ts-a.ts);
   const andere = store.bewohner.filter(x=>x.id!==b.id)
-    .map(x=>({id:x.id, name:x.name, n:x.berichte.filter(e=>e.ts>=cutoff).length}))
+    .map(x=>({id:x.id, name:anzeigeName(x), n:x.berichte.filter(e=>e.ts>=cutoff).length}))
     .filter(o=>o.n>0);
   const h = new Date().getHours();
   const gruss = h<5?'Gute Nacht':h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend';
   return `
   <div class="section-head spread" style="margin-top:4px">
     <div><h2>${gruss}.</h2>
-    <span class="faint">Berichteblatt der letzten 24 Stunden · ${esc(b.name)} – Deine Übergabe.</span></div>
+    <span class="faint">Berichteblatt der letzten 24 Stunden · ${esc(anzeigeName(b))} – Deine Übergabe.</span></div>
     <button class="btn small primary" data-goto-bericht-neu>+ Eintrag</button>
   </div>
   ${b24h.length ? b24h.map(e=>bEntry(b,e,false)).join('') :
@@ -549,11 +561,7 @@ function vSis(b){
   <div class="section-head"><h2>Sechs Themenfelder</h2></div>
   ${warum('themenfelder')}
   <div class="grid" style="margin-top:10px">
-    ${TF.map((f,i)=>`<div class="card tight">
-      <div class="spread"><h3>${i+1} · ${f.name}</h3>${s.themenfelder[f.k].trim()?'<span class="chip ok">bearbeitet</span>':'<span class="chip none">offen</span>'}</div>
-      <div class="hint" style="margin:4px 0 8px">${f.leit}</div>
-      <textarea data-tf="${f.k}" placeholder="Individuell beschreiben: was kann die Person, was braucht sie, was ist ihr wichtig?">${esc(s.themenfelder[f.k])}</textarea>
-    </div>`).join('')}
+    ${TF.map((f,i)=>tfCard(b,f,i)).join('')}
   </div>
 
   <div class="section-head"><h2>Risikomatrix</h2></div>
@@ -578,6 +586,137 @@ function vSis(b){
       </div>`;
     }).join('')}
   </div>`;
+}
+
+/* ================= Themenfelder: geführte Eingabe & Textbau ================= */
+const TFK = window.THEMENFELDER || {skalen:{}, felder:{}};
+function anzeigeName(b){ return (b.anrede==='herr'?'Herr ':b.anrede==='frau'?'Frau ':'')+b.name; }
+function textName(b){ return b.name.replace(/\s*\([^)]*\)\s*/g,' ').replace(/\s+/g,' ').trim() || b.name; }
+function leererTf(){ return {aspekte:{}, frei:'', text:'', manuell:false}; }
+function migrateBewohner(b){
+  if(!b.anrede){
+    const m = /^(Frau|Herr)\s+(.+)$/i.exec(b.name||'');
+    if(m){ b.anrede = m[1].toLowerCase(); b.name = m[2].trim(); } else b.anrede = 'neutral';
+  }
+  if(!b.sis) return;
+  b.sis.themenfelder = b.sis.themenfelder || {};
+  TF.forEach(f=>{
+    const v = b.sis.themenfelder[f.k];
+    if(typeof v === 'string') b.sis.themenfelder[f.k] = Object.assign(leererTf(), {text:v, manuell:!!v.trim()}); // Bestands-Freitext bleibt erhalten
+    else if(!v || typeof v !== 'object') b.sis.themenfelder[f.k] = leererTf();
+    else { v.aspekte = v.aspekte||{}; v.frei = v.frei||''; v.text = v.text||''; v.manuell = !!v.manuell; }
+  });
+}
+function migrate(s){ (s.bewohner||[]).forEach(b=>{ try{ migrateBewohner(b); }catch(e){} }); return s; }
+function tfGet(b,k){ let v = b.sis.themenfelder[k]; if(!v || typeof v!=='object'){ migrateBewohner(b); v = b.sis.themenfelder[k]; } return v; }
+function tfPerson(b){
+  const n = textName(b);
+  if(b.anrede==='herr') return {nom:'Herr '+n, dat:'Herrn '+n, akk:'Herrn '+n, pn:'er', pd:'ihm', pa:'ihn'};
+  if(b.anrede==='frau') return {nom:'Frau '+n, dat:'Frau '+n, akk:'Frau '+n, pn:'sie', pd:'ihr', pa:'sie'};
+  return {nom:n, dat:n, akk:n, pn:n, pd:n, pa:n};
+}
+function listJoin(a){ return a.length<=1 ? a.join('') : a.slice(0,-1).join(', ')+' und '+a[a.length-1]; }
+/* Baut den Fließtext eines Themenfelds aus Aspekten, Bemerkungen und Ergänzung (Regeln: siehe themenfelder.js). */
+function tfGenerate(b,k){
+  const def = TFK.felder[k], tf = tfGet(b,k), P = tfPerson(b);
+  let erste = true;
+  const fill = s => s.replace(/\{N(d|a)?\}/g, (m,c)=>{ const r = erste ? (c==='d'?P.dat:c==='a'?P.akk:P.nom) : (c==='d'?P.pd:c==='a'?P.pa:P.pn); erste = false; return r; });
+  const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+  const punkt = s => /[.!?…]$/.test(s) ? s : s+'.';
+  const satz = s => cap(punkt(fill(s)));
+  const saetze = [];
+  const bemSatz = bem => { bem = (bem||'').trim(); if(bem) saetze.push(satz(/^[a-zäöüß]/.test(bem) ? '{N} '+bem : bem)); };
+  (def ? def.gruppen : []).forEach(g=>{
+    if(g.satz){ /* gebündelte Gruppe: gleiche Werte in einem Satz */
+      const skala = TFK.skalen[g.skala] || {werte:[]};
+      let cur = '';
+      skala.werte.forEach(w=>{
+        const asp = g.aspekte.filter(a=>(tf.aspekte[g.k+'.'+a.k]||{}).w===w.k);
+        if(!asp.length) return;
+        const L = listJoin(asp.map(a=>a.lk||a.l));
+        if(cur && g.kurz && g.kurz[w.k]) cur += ', '+g.kurz[w.k].replace('{L}', L);
+        else { if(cur) saetze.push(satz(cur)); cur = g.satz[w.k].replace('{L}', L); }
+      });
+      if(cur) saetze.push(satz(cur));
+      g.aspekte.forEach(a=>{ const e = tf.aspekte[g.k+'.'+a.k]; if(e && e.w) bemSatz(e.bem); });
+    } else {
+      g.aspekte.forEach(a=>{
+        const e = tf.aspekte[g.k+'.'+a.k];
+        if(!e || !e.w || !a.satz || !a.satz[e.w]) return;
+        saetze.push(satz(a.satz[e.w])); bemSatz(e.bem);
+      });
+    }
+  });
+  let out = saetze.join(' ');
+  const frei = (tf.frei||'').trim();
+  if(frei) out = out ? out+'\n\n'+frei : frei;
+  return out;
+}
+function tfText(b,k){ const tf = tfGet(b,k); return tf.manuell ? (tf.text||'') : tfGenerate(b,k); }
+const TF_LEER = 'Noch kein Satz – Aspekte setzen oder Ergänzung schreiben.';
+function tfCard(b,f,i){
+  const tf = tfGet(b,f.k), def = TFK.felder[f.k], text = tfText(b,f.k), prom = !!(def && def.freitextProminent);
+  const frei = `<div class="field" style="margin:${prom?'8px 0 4px':'12px 0 0'}"><label class="fl" for="tffrei-${f.k}">${prom?'Einschätzung in eigenen Worten':'Ergänzung'}</label>
+      <textarea id="tffrei-${f.k}" data-tffrei="${f.k}" ${prom?'':'style="min-height:52px"'} placeholder="${prom?'Was prägt diese Person hier? Diagnosen mit Alltagsfolgen, Biografie, was ihr wichtig ist – die Aspekte unten ergänzen nur.':'Was die Aspekte nicht abbilden: Gewohnheiten, Wünsche, Beobachtungen.'}">${esc(tf.frei)}</textarea></div>`;
+  const gruppen = def ? def.gruppen.map(g=>'<div class="tf-grp"><div class="gname">'+esc(g.name)+'</div>'+g.aspekte.map(a=>{
+      const skala = TFK.skalen[a.skala||g.skala] || {werte:[]}, key = g.k+'.'+a.k, e = tf.aspekte[key]||{};
+      return '<div class="asp"><span class="al">'+esc(a.l)+'</span><div class="seg small" role="group" aria-label="'+esc(a.l)+'">'+
+        skala.werte.map(w=>'<button type="button" data-asp="'+f.k+'|'+key+'" data-val="'+w.k+'" aria-pressed="'+(e.w===w.k)+'">'+esc(w.l)+'</button>').join('')+'</div>'+
+        (e.w ? '<div class="bem"><input type="text" data-bem="'+f.k+'|'+key+'" value="'+esc(e.bem||'')+'" placeholder="'+esc(a.ph||'Bemerkung …')+'" aria-label="Bemerkung zu '+esc(a.l)+'"></div>' : '')+'</div>';
+    }).join('')+'</div>').join('') : '<div class="hint">Aspekt-Katalog (themenfelder.js) nicht geladen – nur Freitext möglich.</div>';
+  const unten = tf.manuell
+    ? `<div class="field" style="margin:12px 0 0"><label class="fl" for="tftext-${f.k}">Text des Themenfelds</label><textarea id="tftext-${f.k}" data-tftext="${f.k}" style="min-height:120px">${esc(tf.text)}</textarea>
+       <div class="hint"><b>Abgekoppelt vom Generator:</b> Änderungen an den Aspekten fließen nicht mehr in diesen Text ein. <button type="button" class="btn small ghost" data-tfreset="${f.k}">Neu aus den Aspekten erzeugen</button></div></div>`
+    : `<div class="tf-prev${text.trim()?'':' leer'}" data-tfprev="${f.k}"><span class="pl">Vorschau</span>${text.trim()?esc(text):TF_LEER}</div>
+       <div class="row" style="margin-top:8px"><button type="button" class="btn small" data-tfuebernehmen="${f.k}" ${text.trim()?'':'disabled'}>Text übernehmen und anpassen</button><span class="faint">Danach frei bearbeitbar; die Aspekte bleiben als Gedankenstütze stehen.</span></div>`;
+  return `<div class="card tight" id="tfcard-${f.k}">
+    <div class="spread"><h3>${i+1} · ${f.name}</h3><span class="chip ${text.trim()?'ok':'none'}" data-tfchip="${f.k}">${text.trim()?'bearbeitet':'offen'}</span></div>
+    <div class="hint" style="margin:4px 0 2px">${f.leit}</div>
+    ${prom && !tf.manuell ? frei : ''}${gruppen}${!prom && !tf.manuell ? frei : ''}${unten}</div>`;
+}
+function tfPreview(b,k){
+  const text = tfText(b,k), p = el('panel');
+  const pv = p.querySelector('[data-tfprev="'+k+'"]');
+  if(pv){ pv.className = 'tf-prev'+(text.trim()?'':' leer'); pv.innerHTML = '<span class="pl">Vorschau</span>'+(text.trim()?esc(text):TF_LEER); }
+  const ub = p.querySelector('[data-tfuebernehmen="'+k+'"]'); if(ub) ub.disabled = !text.trim();
+  const chip = p.querySelector('[data-tfchip="'+k+'"]');
+  if(chip){ chip.className = 'chip '+(text.trim()?'ok':'none'); chip.textContent = text.trim()?'bearbeitet':'offen'; }
+}
+function bindTf(b){
+  const p = el('panel');
+  const refresh = k => { const card = el('tfcard-'+k); if(!card) return; const i = TF.findIndex(x=>x.k===k); card.outerHTML = tfCard(b, TF[i], i); bindTf(b); };
+  p.querySelectorAll('[data-asp]').forEach(btn=>btn.onclick=()=>{
+    const [k,key] = btn.dataset.asp.split('|'); const tf = tfGet(b,k);
+    const e = tf.aspekte[key] || (tf.aspekte[key] = {w:'', bem:''});
+    e.w = (e.w===btn.dataset.val ? '' : btn.dataset.val); // Bemerkung bleibt beim Abwählen erhalten
+    persist(); refresh(k);
+  });
+  p.querySelectorAll('[data-bem]').forEach(inp=>inp.oninput=()=>{
+    const [k,key] = inp.dataset.bem.split('|'); const tf = tfGet(b,k);
+    (tf.aspekte[key] || (tf.aspekte[key] = {w:'', bem:''})).bem = inp.value; save(); tfPreview(b,k);
+  });
+  p.querySelectorAll('[data-tffrei]').forEach(t=>t.oninput=()=>{ tfGet(b,t.dataset.tffrei).frei = t.value; save(); tfPreview(b,t.dataset.tffrei); });
+  p.querySelectorAll('[data-tftext]').forEach(t=>t.oninput=()=>{ tfGet(b,t.dataset.tftext).text = t.value; save(); tfPreview(b,t.dataset.tftext); });
+  p.querySelectorAll('[data-tfuebernehmen]').forEach(btn=>btn.onclick=()=>{
+    const k = btn.dataset.tfuebernehmen, tf = tfGet(b,k);
+    tf.text = tfGenerate(b,k); tf.manuell = true; persist(); refresh(k);
+    const t = el('tftext-'+k); if(t){ t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
+  });
+  p.querySelectorAll('[data-tfreset]').forEach(btn=>btn.onclick=()=>{
+    const k = btn.dataset.tfreset, tf = tfGet(b,k);
+    openModal(mHead('Text neu erzeugen?','')+
+      '<p>Der manuell bearbeitete Text dieses Themenfelds wird verworfen und wieder live aus den Aspekten erzeugt.</p>'+
+      '<div class="row"><button class="btn danger" id="tfResetYes">Ja, neu erzeugen</button><button class="btn ghost" onclick="closeModal()">Abbrechen</button></div>');
+    el('tfResetYes').onclick = ()=>{ tf.manuell = false; tf.text = ''; persist(); closeModal(); refresh(k); };
+  });
+}
+function anredeSeg(id, cur){
+  return '<div class="seg small" id="'+id+'">'+[['frau','Frau'],['herr','Herr'],['neutral','ohne Anrede']].map(x=>'<button type="button" data-val="'+x[0]+'" aria-pressed="'+(cur===x[0])+'">'+x[1]+'</button>').join('')+'</div>';
+}
+function bindSeg(id){
+  const n = el(id);
+  n.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{ n.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false')); btn.setAttribute('aria-pressed','true'); });
+  return ()=>{ const a = n.querySelector('[aria-pressed="true"]'); return a ? a.dataset.val : 'neutral'; };
 }
 
 /* ---------- Maßnahmenplan ---------- */
@@ -1060,7 +1199,7 @@ function bindPanel(b){
   bindTxt('sisPfk', v=>b.sis.pfk=v);
   bindTxt('sisEingang', v=>b.sis.eingang.text=v);
   bindTxt('sisFremd', v=>b.sis.eingang.fremdWer=v);
-  p.querySelectorAll('[data-tf]').forEach(t=>t.oninput = e=>{ b.sis.themenfelder[t.dataset.tf]=e.target.value; save(); });
+  bindTf(b);
   p.querySelectorAll('[data-risktext]').forEach(t=>t.oninput = e=>{ b.sis.risiken[t.dataset.risktext].text=e.target.value; save(); });
   p.querySelectorAll('[data-risklabel]').forEach(t=>t.oninput = e=>{ b.sis.risiken[t.dataset.risklabel].label=e.target.value; save(); });
   p.querySelectorAll('[data-seg]').forEach(btn=>btn.onclick=()=>{
@@ -1087,12 +1226,14 @@ function bindPanel(b){
 el('bwSelect').onchange = e=>{ store.activeId = e.target.value; persist(); tab='start'; render(); };
 el('btnBwNeu').onclick = ()=>{
   openModal(mHead('Neue Bewohner:in','Name oder Kürzel – bitte datensparsam.')+
-    '<div class="field"><input type="text" id="nbName" placeholder="z. B. Frau M. (Zi. 12)"></div>'+
+    '<div class="field"><label class="fl">Anrede</label>'+anredeSeg('nbAnrede','')+'<div class="hint">Steuert „er/sie“ im erzeugten SIS-Text. Ohne Anrede wird der Name wiederholt.</div></div>'+
+    '<div class="field"><label class="fl" for="nbName">Name</label><input type="text" id="nbName" placeholder="z. B. M. (Zi. 12)"></div>'+
     '<button class="btn primary" id="nbSave">Anlegen</button>');
+  const nbAnrede = bindSeg('nbAnrede');
   el('nbName').focus();
   el('nbSave').onclick = ()=>{
     const n = el('nbName').value.trim(); if(!n){ toast('Name fehlt.'); return; }
-    neuBewohner(n); closeModal(); tab='sis'; render();
+    neuBewohner(n, nbAnrede()); closeModal(); tab='sis'; render();
     toast('Angelegt – Einstieg ist die SIS: die Person kommt zuerst zu Wort.');
   };
   el('nbName').onkeydown = e=>{ if(e.key==='Enter') el('nbSave').click(); };
@@ -1100,14 +1241,16 @@ el('btnBwNeu').onclick = ()=>{
 el('btnBwUmben').onclick = ()=>{
   const b = aktiv(); if(!b) return;
   openModal(mHead('Umbenennen','')+
-    '<div class="field"><input type="text" id="rnName" value="'+esc(b.name)+'"></div>'+
+    '<div class="field"><label class="fl">Anrede</label>'+anredeSeg('rnAnrede',b.anrede)+'</div>'+
+    '<div class="field"><label class="fl" for="rnName">Name</label><input type="text" id="rnName" value="'+esc(b.name)+'"></div>'+
     '<button class="btn primary" id="rnSave">Speichern</button>');
-  el('rnSave').onclick = ()=>{ const n=el('rnName').value.trim(); if(n){ b.name=n; persist(); closeModal(); render(); } };
+  const rnAnrede = bindSeg('rnAnrede');
+  el('rnSave').onclick = ()=>{ const n=el('rnName').value.trim(); if(n){ b.name=n; b.anrede=rnAnrede(); persist(); closeModal(); render(); } };
 };
 el('btnBwDel').onclick = ()=>{
   const b = aktiv(); if(!b) return;
   openModal(mHead('Wirklich löschen?','')+
-    '<p>„'+esc(b.name)+'“ mit SIS, Plan, '+b.berichte.length+' Berichten und '+b.evaluationen.length+' Evaluationen unwiderruflich löschen?</p>'+
+    '<p>„'+esc(anzeigeName(b))+'“ mit SIS, Plan, '+b.berichte.length+' Berichten und '+b.evaluationen.length+' Evaluationen unwiderruflich löschen?</p>'+
     '<div class="row"><button class="btn danger" id="delYes">Ja, löschen</button><button class="btn ghost" onclick="closeModal()">Abbrechen</button></div>');
   el('delYes').onclick = ()=>{
     store.bewohner = store.bewohner.filter(x=>x.id!==b.id);
@@ -1130,7 +1273,7 @@ el('fileImport').onchange = e=>{
     try{
       const s = JSON.parse(r.result);
       if(!s || !Array.isArray(s.bewohner)) throw 0;
-      store = s; if(!store.activeId && store.bewohner.length) store.activeId = store.bewohner[0].id;
+      store = migrate(s); if(!store.activeId && store.bewohner.length) store.activeId = store.bewohner[0].id;
       persist(); render(); toast('Import erfolgreich: '+store.bewohner.length+' Bewohner:in(nen).');
     }catch(err){ toast('Import fehlgeschlagen – keine gültige Exportdatei.'); }
   };
