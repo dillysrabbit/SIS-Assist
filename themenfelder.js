@@ -20,7 +20,7 @@
                wird sie unverändert übernommen. Ein fehlender Schlusspunkt wird ergänzt.
    Nicht gesetzte Aspekte erzeugen keinen Satz und zählen nicht als Lücke. */
 window.THEMENFELDER = {
-  version: '2026-10',
+  version: '2026-10.2', // abgeglichen mit der SIS-Orientierungshilfe (Checkliste Erstgespräch, Maria-Hötte-Stift)
   skalen: {
     f:  { name:'Fähigkeit', werte:[ {k:'ja', l:'ja'}, {k:'teils', l:'eingeschränkt'}, {k:'nein', l:'nein'} ] },
     s:  { name:'Selbstständigkeit', werte:[ {k:'selbst', l:'selbstständig'}, {k:'anleitung', l:'mit Anleitung'}, {k:'unterstuetzung', l:'mit Unterstützung'}, {k:'uebernahme', l:'vollständig übernommen'} ] },
@@ -64,6 +64,8 @@ window.THEMENFELDER = {
       { k:'mitteilen', name:'Sich mitteilen', aspekte:[
           { k:'verbal', l:'verbal', skala:'f', ph:'z. B. Wortfindungsstörungen, spricht in kurzen Sätzen',
             satz:{ ja:'{N} teilt sich verbal verständlich mit.', teils:'Die verbale Verständigung ist eingeschränkt.', nein:'{N} kann sich verbal nicht mehr mitteilen.' } },
+          { k:'sprechen', l:'Sprechen (Artikulation, Tempo)', skala:'f', ph:'z. B. verwaschen nach Schlaganfall, braucht Zeit für Antworten',
+            satz:{ ja:'Das Sprechen ist flüssig und gut verständlich.', teils:'Das Sprechen ist verlangsamt bzw. zeitweise schwer verständlich.', nein:'Das Sprechen ist kaum verständlich.' } },
           { k:'nonverbal', l:'nonverbal', skala:'f', ph:'z. B. wendet den Kopf ab, wenn etwas nicht passt',
             satz:{ ja:'{N} nutzt Mimik und Gestik, um sich verständlich zu machen.', teils:'Nonverbale Signale sind vorhanden, aber nicht immer eindeutig zu deuten.', nein:'Nonverbale Signale sind kaum zu deuten.' } },
           { k:'beduerfnisse', l:'Bedürfnisse äußern', skala:'f', ph:'z. B. meldet Toilettengang, nicht aber Schmerzen',
@@ -80,6 +82,14 @@ window.THEMENFELDER = {
             satz:{ ja:'{N} trifft Alltagsentscheidungen selbst.', teils:'{N} trifft Alltagsentscheidungen mit Unterstützung.', nein:'Alltagsentscheidungen können nicht mehr selbst getroffen werden.' } },
           { k:'risiken', l:'Risiken erkennen', skala:'f', ph:'z. B. steht ohne Rollator auf, unterschätzt Sturzgefahr',
             satz:{ ja:'{N} erkennt Risiken im Alltag und handelt entsprechend.', teils:'{N} erkennt Risiken im Alltag nur eingeschränkt.', nein:'{N} erkennt Risiken im Alltag nicht.' } }
+        ] },
+      { k:'verhalten', name:'Verhalten & psychische Situation', aspekte:[
+          { k:'herausfordernd', l:'herausforderndes Verhalten', skala:'jn', ph:'z. B. wehrt die Körperpflege ab, abends gereizt',
+            satz:{ ja:'Es zeigt sich herausforderndes Verhalten.', nein:'Herausforderndes Verhalten zeigt sich derzeit nicht.', unklar:'Ob sich herausforderndes Verhalten zeigt, ist weiter zu beobachten.' } },
+          { k:'unruhe', l:'Unruhe / Hinlauftendenz', skala:'jn', ph:'z. B. sucht nachmittags den Ausgang, „muss zur Arbeit“',
+            satz:{ ja:'{N} ist zeitweise unruhig bzw. zeigt eine Hinlauftendenz.', nein:'Unruhe oder eine Hinlauftendenz bestehen nicht.', unklar:'Hinweise auf Unruhe oder eine Hinlauftendenz sind weiter zu beobachten.' } },
+          { k:'aengste', l:'Ängste / psychische Belastung', skala:'jn', ph:'z. B. Angst vor dem Alleinsein in der Nacht',
+            satz:{ ja:'{N} äußert Ängste bzw. wirkt psychisch belastet.', nein:'Ängste oder psychische Belastungen sind derzeit nicht erkennbar.', unklar:'Ängste und psychische Belastungen sind im Gespräch weiter zu erfassen.' } }
         ] }
     ] },
 
@@ -103,13 +113,27 @@ window.THEMENFELDER = {
           { k:'treppe', l:'Treppen', skala:'f', ph:'z. B. nur mit Handlauf und Begleitung',
             satz:{ ja:'{N} bewältigt Treppen.', teils:'{N} bewältigt Treppen nur mit Handlauf und Begleitung.', nein:'{N} bewältigt keine Treppen.' } },
           { k:'aussen', l:'Gehen außerhalb des Hauses', skala:'s', ph:'z. B. Garten allein, Einkaufen nur mit Tochter',
-            satz:{ selbst:'{N} verlässt das Haus selbstständig.', anleitung:'{N} verlässt das Haus nach Absprache.', unterstuetzung:'{N} geht nur in Begleitung nach draußen.', uebernahme:'{N} kommt nur im Rollstuhl mit Begleitung nach draußen.' } }
+            satz:{ selbst:'{N} verlässt das Haus selbstständig.', anleitung:'{N} verlässt das Haus nach Absprache.', unterstuetzung:'{N} geht nur in Begleitung nach draußen.', uebernahme:'{N} kommt nur im Rollstuhl mit Begleitung nach draußen.' } },
+          { k:'gangbild', l:'Gangbild auffällig', skala:'jn', ph:'z. B. kleinschrittig, vornübergebeugt, unsicher beim Drehen',
+            satz:{ ja:'Das Gangbild ist auffällig.', nein:'Das Gangbild ist unauffällig.', unklar:'Das Gangbild ist noch gezielt zu beobachten.' } }
         ] },
       { k:'sicherheit', name:'Hilfsmittel & Sturz', aspekte:[
           { k:'hilfsmittel', l:'Hilfsmittel zur Fortbewegung', skala:'jn', ph:'z. B. Rollator, bleibt im Zimmer oft stehen',
             satz:{ ja:'{N} nutzt ein Hilfsmittel zur Fortbewegung.', nein:'{N} nutzt kein Hilfsmittel zur Fortbewegung.', unklar:'Der Bedarf an einem Hilfsmittel zur Fortbewegung ist noch zu klären.' } },
           { k:'sturz', l:'Stürze in den letzten 12 Monaten', skala:'jn', ph:'z. B. zwei Stürze nachts auf dem Weg zur Toilette',
             satz:{ ja:'{N} ist in den letzten zwölf Monaten gestürzt.', nein:'{N} ist in den letzten zwölf Monaten nicht gestürzt.', unklar:'Zur Sturzgeschichte liegen keine verlässlichen Angaben vor.' } }
+        ] },
+      { k:'risiken', name:'Risiken & Schutz', aspekte:[
+          { k:'einfluss', l:'gesundheitliche Einflüsse auf die Mobilität', skala:'jn', ph:'z. B. Schwindel unter neuer Medikation, Schmerz im Knie',
+            satz:{ ja:'Gesundheitliche Faktoren schränken die Mobilität ein.', nein:'Gesundheitliche Einflüsse auf die Mobilität bestehen derzeit nicht.', unklar:'Gesundheitliche Einflüsse auf die Mobilität sind weiter abzuklären.' } },
+          { k:'dekubitus', l:'dekubitusgefährdete Körperstellen', skala:'jn', ph:'z. B. Steiß und Fersen – Abgleich mit der Risikomatrix',
+            satz:{ ja:'Es bestehen dekubitusgefährdete Körperstellen.', nein:'Dekubitusgefährdete Körperstellen bestehen derzeit nicht.', unklar:'Die Dekubitusgefährdung ist differenziert einzuschätzen.' } },
+          { k:'kontraktur', l:'kontrakturgefährdete Gelenke', skala:'jn', ph:'z. B. Schulter rechts, Hüfte – ggf. Matrix „Sonstiges“',
+            satz:{ ja:'Es bestehen kontrakturgefährdete Gelenke.', nein:'Eine Kontrakturgefährdung besteht derzeit nicht.', unklar:'Die Kontrakturgefährdung ist differenziert einzuschätzen.' } },
+          { k:'fem', l:'freiheitsentziehende Maßnahmen', skala:'jn', ph:'z. B. Bettseitenteil nachts – Einwilligung bzw. Beschluss prüfen',
+            satz:{ ja:'Es kommen freiheitsentziehende Maßnahmen zum Einsatz; Einwilligung bzw. richterlicher Beschluss sind aktuell zu halten.', nein:'Freiheitsentziehende Maßnahmen kommen nicht zum Einsatz.', unklar:'Der Einsatz freiheitsentziehender Maßnahmen ist zu klären.' } },
+          { k:'vorlieben', l:'persönliche Vorlieben zur Mobilität', skala:'jn', ph:'z. B. dreht nachmittags eine Runde durch den Garten',
+            satz:{ ja:'Für Bewegung und Aufenthalte im Freien bestehen persönliche Vorlieben.', nein:'Besondere Vorlieben zur Mobilität wurden bisher nicht benannt.', unklar:'Vorlieben rund um Bewegung sind noch zu erfragen.' } }
         ] }
     ] },
 
@@ -119,7 +143,15 @@ window.THEMENFELDER = {
           { k:'medikation', l:'Medikamenteneinnahme', skala:'s', ph:'z. B. Marcumar nach Plan, lehnt abends gelegentlich ab',
             satz:{ selbst:'{N} nimmt die Medikamente selbstständig und zuverlässig ein.', anleitung:'{N} nimmt die Medikamente nach Erinnerung ein.', unterstuetzung:'Die Medikamente werden gestellt und die Einnahme wird begleitet.', uebernahme:'Die Medikamentengabe wird vollständig übernommen.' } },
           { k:'therapie', l:'laufende Therapien / Behandlungen', skala:'jn', ph:'z. B. Physiotherapie 2×/Woche, Insulin nach Schema',
-            satz:{ ja:'Es laufen Behandlungen bzw. Therapien, die im Alltag Zeit und Begleitung brauchen.', nein:'Derzeit laufen keine Therapien über die Regelversorgung hinaus.', unklar:'Der Behandlungs- und Therapiestatus ist mit der Arztpraxis abzugleichen.' } }
+            satz:{ ja:'Es laufen Behandlungen bzw. Therapien, die im Alltag Zeit und Begleitung brauchen.', nein:'Derzeit laufen keine Therapien über die Regelversorgung hinaus.', unklar:'Der Behandlungs- und Therapiestatus ist mit der Arztpraxis abzugleichen.' } },
+          { k:'versorgungen', l:'besondere Versorgungen (Stoma, Katheter, PEG …)', skala:'jn', ph:'z. B. suprapubischer Katheter, Wechsel alle 6 Wochen',
+            satz:{ ja:'Es bestehen besondere Versorgungen wie Stoma, Katheter oder Sonde.', nein:'Besondere Versorgungen wie Stoma, Katheter oder Sonde bestehen nicht.', unklar:'Bestehende besondere Versorgungen sind mit der Arztpraxis abzugleichen.' } },
+          { k:'allergien', l:'Allergien / Unverträglichkeiten', skala:'jn', ph:'z. B. Penicillin, Pflasterallergie',
+            satz:{ ja:'Allergien bzw. Unverträglichkeiten sind bekannt.', nein:'Allergien oder Unverträglichkeiten sind nicht bekannt.', unklar:'Allergien und Unverträglichkeiten sind noch zu erfragen.' } },
+          { k:'kooperation', l:'Mitwirkung bei Behandlung und Pflege', skala:'f', ph:'z. B. wirkt bei der Wundversorgung mit, lehnt Insulin zeitweise ab',
+            satz:{ ja:'{N} wirkt bei Behandlung und Pflege mit.', teils:'{N} wirkt bei Behandlung und Pflege nur teilweise mit.', nein:'{N} lehnt Behandlung und Pflege häufig ab; daraus ergibt sich Handlungsbedarf.' } },
+          { k:'gvp', l:'gesundheitliche Versorgungsplanung (GVP)', skala:'jn', ph:'z. B. Gespräch geführt am … – Bogen in der Dateiablage',
+            satz:{ ja:'Eine gesundheitliche Versorgungsplanung wurde durchgeführt und ist auf gesondertem GVP-Bogen dokumentiert (siehe Dateiablage).', nein:'Eine gesundheitliche Versorgungsplanung liegt bisher nicht vor.', unklar:'Ob eine gesundheitliche Versorgungsplanung vorliegt, ist zu klären.' } }
         ] },
       { k:'symptome', name:'Symptome', aspekte:[
           { k:'schmerz', l:'Schmerzen', skala:'jn', ph:'z. B. Knie rechts bei Belastung, NRS 4, abends stärker',
@@ -129,7 +161,9 @@ window.THEMENFELDER = {
           { k:'atmung', l:'Einschränkung der Atmung', skala:'jn', ph:'z. B. Luftnot beim Treppensteigen, Sauerstoff nachts',
             satz:{ ja:'Die Atmung ist beeinträchtigt.', nein:'Die Atmung ist unauffällig.', unklar:'Die Atmung ist noch gezielt zu beobachten.' } },
           { k:'schlucken', l:'Hinweise auf Schluckstörung', skala:'jn', ph:'z. B. hustet beim Trinken, feuchte Stimme nach dem Essen',
-            satz:{ ja:'Es bestehen Hinweise auf eine Schluckstörung.', nein:'Das Schlucken ist unauffällig.', unklar:'Das Schlucken ist noch gezielt zu beobachten.' } }
+            satz:{ ja:'Es bestehen Hinweise auf eine Schluckstörung.', nein:'Das Schlucken ist unauffällig.', unklar:'Das Schlucken ist noch gezielt zu beobachten.' } },
+          { k:'pneumonie', l:'Pneumonierisiko', skala:'jn', ph:'z. B. flache Atmung bei Bettlägerigkeit – ggf. Matrix „Sonstiges“',
+            satz:{ ja:'Es besteht ein erhöhtes Pneumonierisiko.', nein:'Ein erhöhtes Pneumonierisiko besteht derzeit nicht.', unklar:'Das Pneumonierisiko ist differenziert einzuschätzen.' } }
         ] },
       { k:'erleben', name:'Krankheitserleben', aspekte:[
           { k:'belastung', l:'Erkrankung belastet im Alltag', skala:'jn', ph:'z. B. „Ich bin doch nur noch eine Last"',
@@ -153,7 +187,11 @@ window.THEMENFELDER = {
           { k:'essen', l:'Essen', skala:'s', ph:'z. B. Fleisch wird geschnitten, isst langsam',
             satz:{ selbst:'{N} isst selbstständig.', anleitung:'{N} isst mit mundgerecht vorbereiteter Kost und nach Aufforderung selbstständig.', unterstuetzung:'{N} braucht beim Essen teilweise Unterstützung.', uebernahme:'Das Essen wird vollständig angereicht.' } },
           { k:'trinken', l:'Trinken', skala:'s', ph:'z. B. trinkt ohne Erinnerung unter 1000 ml',
-            satz:{ selbst:'{N} trinkt selbstständig und ausreichend.', anleitung:'{N} trinkt nur nach Erinnerung ausreichend.', unterstuetzung:'{N} braucht beim Trinken Unterstützung.', uebernahme:'Getränke werden vollständig angereicht.' } }
+            satz:{ selbst:'{N} trinkt selbstständig und ausreichend.', anleitung:'{N} trinkt nur nach Erinnerung ausreichend.', unterstuetzung:'{N} braucht beim Trinken Unterstützung.', uebernahme:'Getränke werden vollständig angereicht.' } },
+          { k:'gewicht', l:'Gewichtsschwankungen in der Vergangenheit', skala:'jn', ph:'z. B. 4 kg Abnahme seit dem Klinikaufenthalt – Abgleich Matrix Ernährung',
+            satz:{ ja:'In der Vergangenheit bestanden relevante Gewichtsschwankungen.', nein:'Das Gewicht war zuletzt stabil.', unklar:'Der Gewichtsverlauf ist noch zu erheben.' } },
+          { k:'dehydratation', l:'Dehydratationsrisiko', skala:'jn', ph:'z. B. trinkt ohne Erinnerung zu wenig, Diuretika',
+            satz:{ ja:'Es besteht ein erhöhtes Dehydratationsrisiko.', nein:'Ein erhöhtes Dehydratationsrisiko besteht derzeit nicht.', unklar:'Das Dehydratationsrisiko ist differenziert einzuschätzen.' } }
         ] },
       { k:'ausscheidung', name:'Ausscheidung', aspekte:[
           { k:'toilette', l:'Toilettengang', skala:'s', ph:'z. B. nachts Toilettenstuhl neben dem Bett',
@@ -162,6 +200,12 @@ window.THEMENFELDER = {
             satz:{ ja:'{N} ist harnkontinent.', teils:'{N} ist zeitweise harninkontinent.', nein:'{N} ist harninkontinent.' } },
           { k:'stuhl', l:'Stuhlkontinenz', skala:'f', ph:'z. B. bei Durchfall nicht kontinent, sonst unauffällig',
             satz:{ ja:'{N} ist stuhlkontinent.', teils:'{N} ist zeitweise stuhlinkontinent.', nein:'{N} ist stuhlinkontinent.' } }
+        ] },
+      { k:'besonderes', name:'Gewohnheiten & Nacht', aspekte:[
+          { k:'kultur', l:'kulturelle / religiöse Besonderheiten', skala:'jn', ph:'z. B. isst kein Schweinefleisch, Pflege möglichst durch Frauen',
+            satz:{ ja:'Bei Pflege und Ernährung sind kulturelle bzw. religiöse Besonderheiten zu beachten.', nein:'Kulturelle oder religiöse Besonderheiten für die Selbstversorgung wurden nicht benannt.', unklar:'Kulturelle und religiöse Besonderheiten sind noch zu erfragen.' } },
+          { k:'schlaf', l:'Schlaf & nächtlicher Versorgungsbedarf', skala:'jn', ph:'z. B. schläft erst nach Mitternacht, nachts zweimal Toilettengang mit Hilfe',
+            satz:{ ja:'Es besteht ein besonderer nächtlicher Versorgungsbedarf bzw. der Schlaf ist beeinträchtigt.', nein:'Der Schlaf ist unauffällig; nachts besteht kein besonderer Versorgungsbedarf.', unklar:'Schlaf und nächtlicher Versorgungsbedarf sind noch zu beobachten.' } }
         ] }
     ] },
 
@@ -184,6 +228,12 @@ window.THEMENFELDER = {
       { k:'belastung', name:'Belastung', aspekte:[
           { k:'rueckzug', l:'Rückzug, Einsamkeit, Trauer', skala:'jn', ph:'z. B. weint abends, spricht vom verstorbenen Mann',
             satz:{ ja:'{N} wirkt zurückgezogen bzw. äußert Einsamkeit oder Trauer.', nein:'Hinweise auf Rückzug oder Einsamkeit bestehen nicht.', unklar:'Hinweise auf Rückzug oder Einsamkeit sind weiter zu beobachten.' } }
+        ] },
+      { k:'sinn', name:'Biografie & Glaube', aspekte:[
+          { k:'glaube', l:'Glaube / Konfession bedeutsam', skala:'jn', ph:'z. B. katholisch, Gottesdienst und Rosenkranz wichtig',
+            satz:{ ja:'Glaube und Konfession sind für {Na} bedeutsam.', nein:'Glaube und Konfession spielen für {Na} nach eigener Aussage keine große Rolle.', unklar:'Welche Bedeutung Glaube und Konfession haben, ist noch zu erfragen.' } },
+          { k:'biografie', l:'biografische Aspekte mit Pflegebezug', skala:'jn', ph:'z. B. Landwirtin, früh aufstehen gewohnt',
+            satz:{ ja:'Biografische Aspekte prägen den Alltag und sind in der Pflege zu berücksichtigen.', nein:'Besondere biografische Aspekte mit Pflegebezug wurden bisher nicht benannt.', unklar:'Biografische Aspekte sind noch zu erheben.' } }
         ] }
     ] },
 
@@ -208,6 +258,16 @@ window.THEMENFELDER = {
             satz:{ ja:'{N} nutzt die Rufanlage zielgerichtet.', teils:'{N} nutzt die Rufanlage nicht zuverlässig.', nein:'{N} kann die Rufanlage nicht nutzen.' } },
           { k:'nacht', l:'nächtliche Unruhe / Aufstehen', skala:'jn', ph:'z. B. steht gegen 3 Uhr auf und sucht die Küche',
             satz:{ ja:'{N} ist nachts unruhig bzw. steht nachts auf.', nein:'Die Nächte verlaufen ruhig.', unklar:'Der nächtliche Verlauf ist noch zu beobachten.' } }
+        ] },
+      { k:'organisation', name:'Organisation & Ausstattung', aspekte:[
+          { k:'gestaltung', l:'eigene Möbel / Zimmergestaltung', skala:'jn', ph:'z. B. eigener Sessel und Fotowand, wünscht Bett am Fenster',
+            satz:{ ja:'Das Zimmer ist mit eigenen Möbeln bzw. nach eigenen Wünschen gestaltet.', nein:'Wünsche zur Zimmergestaltung wurden bisher nicht geäußert.', unklar:'Wünsche zur Zimmergestaltung sind noch zu erfragen.' } },
+          { k:'waesche', l:'Wäscheversorgung geklärt', skala:'jn', ph:'z. B. über die Wäscherei; Wollsachen wäscht die Tochter',
+            satz:{ ja:'Die Wäscheversorgung ist geregelt.', nein:'Die Wäscheversorgung ist noch nicht geregelt.', unklar:'Die Wäscheversorgung ist noch zu klären.' } },
+          { k:'pflegeartikel', l:'Besorgung der Pflegeartikel geklärt', skala:'jn', ph:'z. B. Angehörige bringen Duschgel und Creme mit',
+            satz:{ ja:'Die Besorgung der Pflegeartikel ist geregelt.', nein:'Die Besorgung der Pflegeartikel ist noch nicht geregelt.', unklar:'Die Besorgung der Pflegeartikel ist noch zu klären.' } },
+          { k:'hilfen', l:'Orientierungshilfen im Einsatz', skala:'jn', ph:'z. B. Foto an der Zimmertür, großer Kalender, Uhr mit Datum',
+            satz:{ ja:'Orientierungshilfen wie Türschild, Kalender oder Bilder sind im Einsatz.', nein:'Orientierungshilfen sind bisher nicht im Einsatz.', unklar:'Der Bedarf an Orientierungshilfen ist noch zu prüfen.' } }
         ] }
     ] }
   }
