@@ -167,6 +167,12 @@ details.warum .wq{display:block; margin-top:6px; font-size:11.5px; color:var(--i
 .asp .al{font-size:14px; flex:1 1 150px;}
 .asp .bem{width:100%; margin:0 0 6px;}
 .asp .bem input{font-size:14px; padding:6px 9px;}
+.asp .det{width:100%; margin:0 0 6px; display:flex; flex-direction:column; gap:6px; align-items:flex-start;}
+.asp .det-row{width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:6px 8px; align-items:end; padding:6px 8px; border:1px dashed var(--line-strong); border-radius:6px; background:var(--paper2);}
+.asp .det-n{grid-column:1 / -1; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft);}
+.asp .det-f{display:flex; flex-direction:column; gap:2px; font-size:12px; color:var(--ink-soft);}
+.asp .det-f input{font-size:14px; padding:6px 9px; width:100%;}
+.asp .det-row .btn{justify-self:start;}
 .tf-prev{margin-top:12px; padding:10px 12px; background:var(--paper); border:1px dashed var(--line-strong); border-radius:6px; font-size:14.5px; line-height:1.55; white-space:pre-wrap;}
 .tf-prev.leer{color:var(--ink-faint); font-style:italic;}
 .tf-prev .pl{display:block; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:4px; font-style:normal;}
@@ -616,6 +622,10 @@ function tfPerson(b){
   return {nom:n, dat:n, akk:n, pn:n, pd:n, pa:n};
 }
 function listJoin(a){ return a.length<=1 ? a.join('') : a.slice(0,-1).join(', ')+' und '+a[a.length-1]; }
+/* Gefüllte Detailfelder eines Eintrags zu Textbausteinen („Ch 14, seit 03/2026, …“); leere Felder entfallen. */
+function detBausteine(d, eintrag){
+  return d.felder.map(fd=>{ const v = String((eintrag||{})[fd.k]||'').trim(); return v ? (fd.t||'{v}').replace('{v}', v) : ''; }).filter(Boolean).join(', ');
+}
 /* Baut den Fließtext eines Themenfelds aus Aspekten, Bemerkungen und Ergänzung (Regeln: siehe themenfelder.js). */
 function tfGenerate(b,k){
   const def = TFK.felder[k], tf = tfGet(b,k), P = tfPerson(b);
@@ -643,7 +653,11 @@ function tfGenerate(b,k){
       g.aspekte.forEach(a=>{
         const e = tf.aspekte[g.k+'.'+a.k];
         if(!e || !e.w || !a.satz || !a.satz[e.w]) return;
-        saetze.push(satz(a.satz[e.w])); bemSatz(e.bem);
+        const d = a.details, eintr = (d && (d.bei||[]).includes(e.w)) ? (e.det||[]).map(x=>detBausteine(d,x)).filter(Boolean) : [];
+        if(eintr.length && !d.satz) saetze.push(satz(a.satz[e.w].replace(/[.!?…]$/,'')+' ('+eintr.join('; ')+')')); /* Details in Klammern an den Aspektsatz */
+        else if(eintr.length) eintr.forEach((F,i)=>saetze.push(satz(d.satz.replace('{F}', F).replace('{i}', eintr.length>1 ? ' '+(i+1) : '')))); /* ein Satz je Eintrag ersetzt den Aspektsatz */
+        else saetze.push(satz(a.satz[e.w]));
+        bemSatz(e.bem);
       });
     }
   });
@@ -658,10 +672,20 @@ function tfCard(b,f,i){
   const tf = tfGet(b,f.k), def = TFK.felder[f.k], text = tfText(b,f.k), prom = !!(def && def.freitextProminent);
   const frei = `<div class="field" style="margin:${prom?'8px 0 4px':'12px 0 0'}"><label class="fl" for="tffrei-${f.k}">${prom?'Einschätzung in eigenen Worten':'Ergänzung'}</label>
       <textarea id="tffrei-${f.k}" data-tffrei="${f.k}" ${prom?'':'style="min-height:52px"'} placeholder="${prom?'Was prägt diese Person hier? Diagnosen mit Alltagsfolgen, Biografie, was ihr wichtig ist – die Aspekte unten ergänzen nur.':'Was die Aspekte nicht abbilden: Gewohnheiten, Wünsche, Beobachtungen.'}">${esc(tf.frei)}</textarea></div>`;
+  /* Strukturierte Detailfelder (z. B. Art und Lokalisation einer Wunde), nur bei den im Katalog genannten Werten */
+  const details = (a,key,e) => {
+    const d = a.details; if(!d || !e.w || !(d.bei||[]).includes(e.w)) return '';
+    const einheit = d.einheit||'Eintrag', list = (e.det && e.det.length) ? e.det : [{}];
+    return '<div class="det">'+list.map((x,i)=>'<div class="det-row">'+(d.mehrfach && list.length>1 ? '<span class="det-n">'+esc(einheit)+' '+(i+1)+'</span>' : '')+
+      d.felder.map(fd=>'<label class="det-f"><span>'+esc(fd.l)+'</span><input type="text" data-det="'+f.k+'|'+key+'|'+i+'|'+fd.k+'" value="'+esc(x[fd.k]||'')+'" placeholder="'+esc(fd.ph||'')+'" aria-label="'+esc(fd.l)+(d.mehrfach ? ' – '+esc(einheit)+' '+(i+1) : '')+'"></label>').join('')+
+      (d.mehrfach && list.length>1 ? '<button type="button" class="btn small ghost" data-detdel="'+f.k+'|'+key+'|'+i+'">'+esc(einheit)+' '+(i+1)+' entfernen</button>' : '')+'</div>').join('')+
+      (d.mehrfach ? '<button type="button" class="btn small ghost" data-detadd="'+f.k+'|'+key+'">+ weitere '+esc(einheit)+'</button>' : '')+'</div>';
+  };
   const gruppen = def ? def.gruppen.map(g=>'<div class="tf-grp"><div class="gname">'+esc(g.name)+'</div>'+g.aspekte.map(a=>{
       const skala = TFK.skalen[a.skala||g.skala] || {werte:[]}, key = g.k+'.'+a.k, e = tf.aspekte[key]||{};
       return '<div class="asp"><span class="al">'+esc(a.l)+'</span><div class="seg small" role="group" aria-label="'+esc(a.l)+'">'+
         skala.werte.map(w=>'<button type="button" data-asp="'+f.k+'|'+key+'" data-val="'+w.k+'" aria-pressed="'+(e.w===w.k)+'">'+esc(w.l)+'</button>').join('')+'</div>'+
+        details(a,key,e)+
         (e.w ? '<div class="bem"><input type="text" data-bem="'+f.k+'|'+key+'" value="'+esc(e.bem||'')+'" placeholder="'+esc(a.ph||'Bemerkung …')+'" aria-label="Bemerkung zu '+esc(a.l)+'"></div>' : '')+'</div>';
     }).join('')+'</div>').join('') : '<div class="hint">Aspekt-Katalog (themenfelder.js) nicht geladen – nur Freitext möglich.</div>';
   const unten = tf.manuell
@@ -694,6 +718,20 @@ function bindTf(b){
   p.querySelectorAll('[data-bem]').forEach(inp=>inp.oninput=()=>{
     const [k,key] = inp.dataset.bem.split('|'); const tf = tfGet(b,k);
     (tf.aspekte[key] || (tf.aspekte[key] = {w:'', bem:''})).bem = inp.value; save(); tfPreview(b,k);
+  });
+  p.querySelectorAll('[data-det]').forEach(inp=>inp.oninput=()=>{
+    const [k,key,i,fk] = inp.dataset.det.split('|'); const tf = tfGet(b,k);
+    const e = tf.aspekte[key] || (tf.aspekte[key] = {w:'', bem:''}); e.det = e.det||[];
+    (e.det[+i] || (e.det[+i] = {}))[fk] = inp.value; save(); tfPreview(b,k);
+  });
+  p.querySelectorAll('[data-detadd]').forEach(btn=>btn.onclick=()=>{
+    const [k,key] = btn.dataset.detadd.split('|'); const e = tfGet(b,k).aspekte[key]; if(!e) return;
+    e.det = e.det||[]; if(!e.det.length) e.det.push({}); e.det.push({}); persist(); refresh(k);
+    const n = el('panel').querySelector('[data-det^="'+k+'|'+key+'|'+(e.det.length-1)+'|"]'); if(n) n.focus();
+  });
+  p.querySelectorAll('[data-detdel]').forEach(btn=>btn.onclick=()=>{
+    const [k,key,i] = btn.dataset.detdel.split('|'); const e = tfGet(b,k).aspekte[key]; if(!e || !e.det) return;
+    e.det.splice(+i,1); persist(); refresh(k);
   });
   p.querySelectorAll('[data-tffrei]').forEach(t=>t.oninput=()=>{ tfGet(b,t.dataset.tffrei).frei = t.value; save(); tfPreview(b,t.dataset.tffrei); });
   p.querySelectorAll('[data-tftext]').forEach(t=>t.oninput=()=>{ tfGet(b,t.dataset.tftext).text = t.value; save(); tfPreview(b,t.dataset.tftext); });

@@ -14,17 +14,25 @@
                Namen („Herr Mustermann"), jede weitere zum Pronomen (er/sie, ihm/ihr, ihn/sie).
                Bei Anrede „neutral" wird immer der Name eingesetzt.
    ph          Platzhalter des Bemerkungsfeldes (Beispiel für eine konkrete Beobachtung).
+   details     Optional je Aspekt: strukturierte Zusatzfelder, die nur bei den Werten in "bei" eingeblendet werden
+               (z. B. Art und Lokalisation einer Wunde). "felder" sind kleine Textfelder (k, l, ph) mit einem
+               Textbaustein "t" ({v} = Eingabe); leere Felder entfallen, gefüllte werden mit Komma verbunden.
+               mehrfach:true erlaubt mehrere Einträge („+ weitere Wunde"). Mit "satz" wird je Eintrag ein eigener
+               Satz gebildet ({F} = verbundene Bausteine, {i} = laufende Nummer, nur bei mehr als einem Eintrag),
+               der den Aspektsatz ersetzt, sobald ein Eintrag gefüllt ist; ohne "satz" werden die Bausteine in
+               Klammern an den Aspektsatz gehängt.
 
    Bemerkung   Wird als eigener Satz hinter den Aspektsatz gesetzt. Beginnt sie klein, wird das
                Pronomen vorangestellt („findet den Weg …" → „Er findet den Weg …"); beginnt sie groß,
                wird sie unverändert übernommen. Ein fehlender Schlusspunkt wird ergänzt.
    Nicht gesetzte Aspekte erzeugen keinen Satz und zählen nicht als Lücke. */
 window.THEMENFELDER = {
-  version: '2026-10.2', // abgeglichen mit der SIS-Orientierungshilfe (Checkliste Erstgespräch, Maria-Hötte-Stift)
+  version: '2026-10.3', // abgeglichen mit der SIS-Orientierungshilfe (Checkliste Erstgespräch, Maria-Hötte-Stift)
   skalen: {
     f:  { name:'Fähigkeit', werte:[ {k:'ja', l:'ja'}, {k:'teils', l:'eingeschränkt'}, {k:'nein', l:'nein'} ] },
     s:  { name:'Selbstständigkeit', werte:[ {k:'selbst', l:'selbstständig'}, {k:'anleitung', l:'mit Anleitung'}, {k:'unterstuetzung', l:'mit Unterstützung'}, {k:'uebernahme', l:'vollständig übernommen'} ] },
-    jn: { name:'Vorhanden', werte:[ {k:'ja', l:'ja'}, {k:'nein', l:'nein'}, {k:'unklar', l:'unklar'} ] }
+    jn: { name:'Vorhanden', werte:[ {k:'ja', l:'ja'}, {k:'nein', l:'nein'}, {k:'unklar', l:'unklar'} ] },
+    kath: { name:'Blasenkatheter', werte:[ {k:'nein', l:'keiner'}, {k:'tuk', l:'transurethral'}, {k:'spk', l:'suprapubisch'} ] }
   },
   felder: {
 
@@ -144,8 +152,16 @@ window.THEMENFELDER = {
             satz:{ selbst:'{N} nimmt die Medikamente selbstständig und zuverlässig ein.', anleitung:'{N} nimmt die Medikamente nach Erinnerung ein.', unterstuetzung:'Die Medikamente werden gestellt und die Einnahme wird begleitet.', uebernahme:'Die Medikamentengabe wird vollständig übernommen.' } },
           { k:'therapie', l:'laufende Therapien / Behandlungen', skala:'jn', ph:'z. B. Physiotherapie 2×/Woche, Insulin nach Schema',
             satz:{ ja:'Es laufen Behandlungen bzw. Therapien, die im Alltag Zeit und Begleitung brauchen.', nein:'Derzeit laufen keine Therapien über die Regelversorgung hinaus.', unklar:'Der Behandlungs- und Therapiestatus ist mit der Arztpraxis abzugleichen.' } },
-          { k:'versorgungen', l:'besondere Versorgungen (Stoma, Katheter, PEG …)', skala:'jn', ph:'z. B. suprapubischer Katheter, Wechsel alle 6 Wochen',
-            satz:{ ja:'Es bestehen besondere Versorgungen wie Stoma, Katheter oder Sonde.', nein:'Besondere Versorgungen wie Stoma, Katheter oder Sonde bestehen nicht.', unklar:'Bestehende besondere Versorgungen sind mit der Arztpraxis abzugleichen.' } },
+          { k:'versorgungen', l:'besondere Versorgungen (Stoma, PEG, Port, Tracheostoma …)', skala:'jn', ph:'z. B. PEG, Sondenkost nach Plan; Kolostoma, versorgt sich selbst',
+            satz:{ ja:'Es bestehen besondere Versorgungen wie Stoma, Sonde oder Port.', nein:'Besondere Versorgungen wie Stoma, Sonde oder Port bestehen nicht.', unklar:'Bestehende besondere Versorgungen sind mit der Arztpraxis abzugleichen.' } },
+          { k:'katheter', l:'liegender Blasenkatheter', skala:'kath', ph:'z. B. zieht nachts am Katheter, Beinbeutel tags / Bettbeutel nachts',
+            satz:{ nein:'Ein Blasenkatheter liegt nicht.', tuk:'Es liegt ein transurethraler Dauerkatheter', spk:'Es liegt ein suprapubischer Blasenkatheter' },
+            details:{ bei:['tuk','spk'], felder:[
+              { k:'groesse', l:'Größe', ph:'z. B. 14', t:'Ch {v}' },
+              { k:'seit', l:'liegt seit', ph:'z. B. 03/2026, Klinik', t:'seit {v}' },
+              { k:'wechsel', l:'Wechsel', ph:'z. B. alle 6 Wochen, zuletzt 14.10.', t:'Wechsel {v}' },
+              { k:'grund', l:'Indikation', ph:'z. B. Harnverhalt bei Prostatahyperplasie', t:'Indikation: {v}' }
+            ] } },
           { k:'allergien', l:'Allergien / Unverträglichkeiten', skala:'jn', ph:'z. B. Penicillin, Pflasterallergie',
             satz:{ ja:'Allergien bzw. Unverträglichkeiten sind bekannt.', nein:'Allergien oder Unverträglichkeiten sind nicht bekannt.', unklar:'Allergien und Unverträglichkeiten sind noch zu erfragen.' } },
           { k:'kooperation', l:'Mitwirkung bei Behandlung und Pflege', skala:'f', ph:'z. B. wirkt bei der Wundversorgung mit, lehnt Insulin zeitweise ab',
@@ -156,8 +172,17 @@ window.THEMENFELDER = {
       { k:'symptome', name:'Symptome', aspekte:[
           { k:'schmerz', l:'Schmerzen', skala:'jn', ph:'z. B. Knie rechts bei Belastung, NRS 4, abends stärker',
             satz:{ ja:'{N} hat Schmerzen.', nein:'{N} äußert keine Schmerzen und zeigt keine Schmerzzeichen.', unklar:'Ob Schmerzen vorliegen, ist noch nicht sicher einzuschätzen.' } },
-          { k:'haut', l:'Hautveränderungen / Wunden', skala:'jn', ph:'z. B. Rötung am Steiß, Fingertest negativ',
-            satz:{ ja:'Es bestehen Hautveränderungen bzw. Wunden.', nein:'Die Haut ist intakt.', unklar:'Der Hautzustand ist noch vollständig zu inspizieren.' } },
+          { k:'haut', l:'Hautveränderungen (Rötung, Trockenheit, Ekzem …)', skala:'jn', ph:'z. B. Rötung am Steiß, Fingertest negativ; trockene Unterschenkel',
+            satz:{ ja:'Es bestehen Hautveränderungen.', nein:'Hautveränderungen bestehen nicht.', unklar:'Der Hautzustand ist noch vollständig zu inspizieren.' } },
+          { k:'wunden', l:'bestehende Wunden', skala:'jn', ph:'z. B. Schmerz beim Verbandwechsel, Wunddokumentation angelegt',
+            satz:{ ja:'Es bestehen Wunden.', nein:'Wunden bestehen nicht.', unklar:'Ob Wunden bestehen, ist bei der Hautinspektion zu klären.' },
+            details:{ bei:['ja'], mehrfach:true, einheit:'Wunde', satz:'Wunde{i}: {F}', felder:[
+              { k:'art', l:'Art', ph:'z. B. Dekubitus Kategorie 2, Ulcus cruris venosum, OP-Wunde', t:'{v}' },
+              { k:'lok', l:'Lokalisation', ph:'z. B. Steiß, Ferse links', t:'{v}' },
+              { k:'groesse', l:'Größe / Zustand', ph:'z. B. 3 × 2 cm, Wundgrund belegt, nässend', t:'{v}' },
+              { k:'seit', l:'besteht seit', ph:'z. B. 09/2026, Klinikaufenthalt', t:'seit {v}' },
+              { k:'versorgung', l:'Versorgung', ph:'z. B. Hydrokolloid, Wechsel Mo/Do, ärztlich angeordnet', t:'Versorgung: {v}' }
+            ] } },
           { k:'atmung', l:'Einschränkung der Atmung', skala:'jn', ph:'z. B. Luftnot beim Treppensteigen, Sauerstoff nachts',
             satz:{ ja:'Die Atmung ist beeinträchtigt.', nein:'Die Atmung ist unauffällig.', unklar:'Die Atmung ist noch gezielt zu beobachten.' } },
           { k:'schlucken', l:'Hinweise auf Schluckstörung', skala:'jn', ph:'z. B. hustet beim Trinken, feuchte Stimme nach dem Essen',
