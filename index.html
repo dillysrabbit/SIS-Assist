@@ -655,10 +655,8 @@ function tfGenerate(b,k){
         if(!e || !e.w || !a.satz || !a.satz[e.w]) return;
         const d = a.details, eintr = (d && (d.bei||[]).includes(e.w)) ? (e.det||[]).map(x=>detBausteine(d,x)).filter(Boolean) : [];
         if(eintr.length && !d.satz) saetze.push(satz(a.satz[e.w].replace(/[.!?…]$/,'')+' ('+eintr.join('; ')+')')); /* Details in Klammern an den Aspektsatz */
-        else {
-          saetze.push(satz(a.satz[e.w]));
-          if(d && d.satz) eintr.forEach((F,i)=>saetze.push(satz(d.satz.replace('{F}', F).replace('{i}', eintr.length>1 ? ' '+(i+1) : '')))); /* ein Satz je Eintrag */
-        }
+        else if(eintr.length) eintr.forEach((F,i)=>saetze.push(satz(d.satz.replace('{F}', F).replace('{i}', eintr.length>1 ? ' '+(i+1) : '')))); /* ein Satz je Eintrag ersetzt den Aspektsatz */
+        else saetze.push(satz(a.satz[e.w]));
         bemSatz(e.bem);
       });
     }

@@ -18,8 +18,9 @@
                (z. B. Art und Lokalisation einer Wunde). "felder" sind kleine Textfelder (k, l, ph) mit einem
                Textbaustein "t" ({v} = Eingabe); leere Felder entfallen, gefüllte werden mit Komma verbunden.
                mehrfach:true erlaubt mehrere Einträge („+ weitere Wunde"). Mit "satz" wird je Eintrag ein eigener
-               Satz gebildet ({F} = verbundene Bausteine, {i} = laufende Nummer, nur bei mehr als einem Eintrag);
-               ohne "satz" werden die Bausteine in Klammern an den Aspektsatz gehängt.
+               Satz gebildet ({F} = verbundene Bausteine, {i} = laufende Nummer, nur bei mehr als einem Eintrag),
+               der den Aspektsatz ersetzt, sobald ein Eintrag gefüllt ist; ohne "satz" werden die Bausteine in
+               Klammern an den Aspektsatz gehängt.
 
    Bemerkung   Wird als eigener Satz hinter den Aspektsatz gesetzt. Beginnt sie klein, wird das
                Pronomen vorangestellt („findet den Weg …" → „Er findet den Weg …"); beginnt sie groß,
