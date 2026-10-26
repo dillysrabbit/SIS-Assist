@@ -287,13 +287,13 @@ footer{border-top:1px solid var(--line); margin-top:48px; padding-top:14px;}
 'use strict';
 /* ================= Konstanten ================= */
 const LS_KEY = 'sisassist.prozess.v1';
-const TF = [
-  {k:'tf1', name:'Kognition & Kommunikation', leit:'Orientierung, Verstehen, Sich-mitteilen – was gelingt, was braucht Unterstützung?'},
-  {k:'tf2', name:'Mobilität & Beweglichkeit', leit:'Wie bewegt sich die Person fort, was schafft sie selbst, wo und wie unterstützt Du?'},
-  {k:'tf3', name:'Krankheitsbezogene Anforderungen & Belastungen', leit:'Diagnosen mit Alltagsfolgen, Schmerzen, Therapien – was heißt das konkret für die Pflege?'},
-  {k:'tf4', name:'Selbstversorgung', leit:'Waschen, Kleiden, Essen, Ausscheiden – was macht die Person selbst, was ist ihr dabei wichtig?'},
-  {k:'tf5', name:'Leben in sozialen Beziehungen', leit:'Kontakte, Rollen, Tagesgestaltung, was Freude macht – und was belastet?'},
-  {k:'tf6', name:'Wohnen & Häuslichkeit', leit:'Zimmer als privater Raum, Orientierung im Wohnbereich, mitgebrachte Gewohnheiten.'}
+const TF = [ // Leitfragen nach der SIS-Orientierungshilfe (Checkliste Erstgespräch)
+  {k:'tf1', name:'Kognition & Kommunikation', leit:'Inwieweit kann sich die Person zeitlich, persönlich, örtlich und situativ orientieren und interagieren – und Risiken und Gefahren erkennen, auch mit Blick auf herausforderndes Verhalten?'},
+  {k:'tf2', name:'Mobilität & Beweglichkeit', leit:'Inwieweit kann sich die Person innerhalb und außerhalb des Wohnbereichs frei und selbständig bewegen – auch mit Blick auf herausforderndes Verhalten?'},
+  {k:'tf3', name:'Krankheitsbezogene Anforderungen & Belastungen', leit:'Inwieweit liegen krankheits- und therapiebedingte, für Pflege und Betreuung relevante Einschränkungen und Belastungen vor?'},
+  {k:'tf4', name:'Selbstversorgung', leit:'Inwieweit ist die Fähigkeit zur Körperpflege, zum Kleiden, zur Ernährung und zur Ausscheidung eingeschränkt – und was ist der Person dabei wichtig?'},
+  {k:'tf5', name:'Leben in sozialen Beziehungen', leit:'Inwieweit kann die Person Aktivitäten im näheren Umfeld und außer Haus selbst gestalten – Kontakte, Beschäftigung, Glaube, Biografie?'},
+  {k:'tf6', name:'Wohnen & Häuslichkeit', leit:'Wie organisiert und bewältigt die Person den Alltag im eigenen Zimmer und im Wohnbereich – und was braucht sie dafür?'}
 ];
 const RISK = [
   {k:'dekubitus', name:'Dekubitus'},
@@ -549,7 +549,7 @@ function vSis(b){
   <div class="card">
     <div class="field"><label class="fl" for="sisEingang">„Was bewegt Sie im Augenblick? Was brauchen Sie? Was können wir für Sie tun?“</label>
       <textarea id="sisEingang" placeholder="Möglichst im O-Ton der Person …">${esc(s.eingang.text)}</textarea>
-      <div class="hint">Wörtlich oder sinngemäß in <b>ihrer Sprache</b> – keine Pflegefloskeln.</div></div>
+      <div class="hint">Wörtlich oder sinngemäß in <b>ihrer Sprache</b> – keine Pflegefloskeln. Raum geben für: Sicht auf die derzeitige Situation, Vorstellung vom Hilfebedarf, Ängste, Befindlichkeiten, individuelle Wünsche – offen fragen, auch im Beisein von Angehörigen oder Betreuer:innen.</div></div>
     <div class="field"><label class="fl">Wessen Sicht ist das?</label>
       <div class="seg small" id="segQuelle">
         ${segBtn('quelle','selbst',s.eingang.quelle,'Person selbst')}${segBtn('quelle','fremd',s.eingang.quelle,'Fremdauskunft')}${segBtn('quelle','beides',s.eingang.quelle,'Beides')}
