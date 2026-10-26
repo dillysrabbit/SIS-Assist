@@ -155,10 +155,14 @@ details.warum .wq{display:block; margin-top:6px; font-size:11.5px; color:var(--i
 .leitfrage b{color:var(--accent); font-weight:600; letter-spacing:.06em; text-transform:uppercase; font-size:11px; display:block; margin-bottom:2px;}
 
 /* Risikomatrix */
-.risk-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+.risk-row{display:flex; align-items:center; gap:8px 16px; padding:10px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
 .risk-row:last-child{border-bottom:none}
 .risk-name{font-weight:500; min-width:110px;}
 .risk-detail{width:100%; margin-top:6px;}
+.risk-q{display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); white-space:nowrap;}
+.tfchips{display:inline-flex; gap:4px;}
+.tfchips button{appearance:none; border:1px solid var(--line-strong); background:var(--paper2); border-radius:99px; min-width:26px; height:26px; font-size:12.5px; font-weight:600; color:var(--ink-soft); cursor:pointer;}
+.tfchips button[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
 
 /* Themenfelder: geführte Eingabe */
 .tf-grp{margin-top:10px; padding-top:8px; border-top:1px solid var(--line);}
@@ -328,7 +332,7 @@ const EVAL_INTERVALL_TAGE = 183; // interne Regel: halbjährlich
 const WARUM = {
   eingang: {t:'Die Person kommt zuerst zu Wort – wörtlich oder sinngemäß in ihrer Sprache. Floskeln („möchte gut versorgt werden“) liefern keine Steuerungsinformation. Bei kognitiven Einschränkungen tritt die Fremdauskunft hinzu – dann muss erkennbar sein, wessen Sicht hier steht.', q:'Handbuch Strukturmodell (Feld A); § 2 SGB XI'},
   themenfelder: {t:'Die sechs Themenfelder sind der fachliche Blick der Pflegefachkraft: Risiken, Ressourcen und Bedarfe werden erzählt statt angekreuzt. Die Aspekte hier sind Gedankenstütze und Satzbaukasten – nicht die Einschätzung selbst. Erst die Bemerkung („findet den Weg zur Toilette nicht mehr“) macht aus dem Baustein einen Text, aus dem eine fremde Fachkraft die konkrete Person erkennt. Nicht Zutreffendes bleibt ungesetzt statt mit „o. B.“ abgefertigt; ein leeres Feld ist ein Einschätzungsverzicht.', q:'Handbuch Strukturmodell (Feld B); MD-Hinweise 2019'},
-  matrix: {t:'Die Matrix ist die pflichtgemäße Risikoeinschätzung zu den Kernrisiken. „Weitere Einschätzung notwendig“ ist kein Makel, sondern der fachlich saubere Weg: erst differenziert einschätzen (Instrument oder begründete fachliche Einschätzung), dann entscheiden.', q:'Handbuch Strukturmodell (Feld C); DNQP-Expertenstandards'},
+  matrix: {t:'Die Matrix ist die pflichtgemäße Risikoeinschätzung zu den Kernrisiken. „Risiko?“ und „weitere Einschätzung notwendig?“ sind zwei getrennte Fragen: Auch ein klares „Risiko ja“ kann eine differenzierte Einschätzung brauchen – und ein unklarer Fall braucht sie gerade. „Weitere Einschätzung notwendig“ ist kein Makel, sondern der fachlich saubere Weg: erst differenziert einschätzen (Instrument oder begründete fachliche Einschätzung), dann entscheiden. Der Themenfeld-Bezug zeigt, woraus sich die Einschätzung speist.', q:'Handbuch Strukturmodell (Feld C); SIS-Orientierungshilfe; DNQP-Expertenstandards'},
   ableitung: {t:'Der rote Faden des Pflegeprozesses: Jedes erkannte Risiko muss sich im Plan wiederfinden – und keine Maßnahme sollte ohne erhobene Grundlage im Plan stehen. Deshalb verlangt dieses Werkzeug für jede Maßnahme einen Bezug. Die Ableitung des Pflegeprozesses ist nach § 4 PflBG Fachkraft-Aufgabe.', q:'Handbuch Strukturmodell (Element 2); § 4 PflBG; QPR 2024'},
   tagesstruktur: {t:'Der Plan ist nicht nach Pflegeproblemen sortiert, sondern am gelebten Tag der Person entlang: Wer den Frühdienst übernimmt, liest in Minuten, wie diese Person ihren Morgen gestaltet. Ein „Standardtag“, der auf halb so viele Bewohner:innen genauso passt, verfehlt den Zweck.', q:'Handbuch Strukturmodell; § 2 SGB XI'},
   immerso: {t:'Was im Plan als Regelversorgung steht, gilt als erbracht – ohne tägliches Abzeichnen. Dieses Privileg trägt nur ein konkreter, aktueller Plan: Was, wie, wann, durch wen muss für Vertretung und Einarbeitung eindeutig sein.', q:'MD-Hinweise 2019; § 630f BGB (Beweisfunktion)'},
@@ -375,7 +379,7 @@ function neuBewohner(name, anrede){
     sis: { anlass:'', datum:'', pfk:'',
       eingang:{text:'', quelle:'', fremdWer:''},
       themenfelder: Object.fromEntries(TF.map(f=>[f.k, leererTf()])),
-      risiken: Object.fromEntries(RISK.map(r=>[r.k,{s:'',text:'',label:''}])) },
+      risiken: Object.fromEntries(RISK.map(r=>[r.k,{risiko:'', we:'', felder:[], text:'', label:''}])) },
     massnahmen:[], berichte:[], evaluationen:[]
   };
   store.bewohner.push(b); store.activeId = b.id; persist(); return b;
@@ -392,17 +396,33 @@ function checkHandlungsbedarf(b){
   const leereTf = TF.filter(f=>!tfText(b,f.k).trim());
   if(s.eingang.text.trim() && leereTf.length)
     out.push({lvl:'warn', tab:'sis', t: leereTf.length+' von 6 Themenfeldern sind noch leer.', s:'Ein leeres Themenfeld ist ein Einschätzungsverzicht: '+leereTf.map(f=>f.name).join(', ')+'.'});
+  const offeneMatrix = [];
   RISK.forEach(r=>{
     const ri = s.risiken[r.k];
     const rname = r.k==='sonstiges' && ri.label ? ri.label : r.name;
-    if(ri.s==='we' && !ri.text.trim())
+    if(!ri.risiko && !ri.we && (r.k!=='sonstiges' || ri.label.trim())) offeneMatrix.push(rname);
+    if(ri.we==='ja' && !ri.text.trim())
       out.push({lvl:'crit', tab:'sis', t:'Risiko „'+rname+'“: differenzierte Einschätzung fehlt.', s:'„Weitere Einschätzung notwendig“ verlangt ein Instrument oder eine begründete fachliche Einschätzung – mit Datum und Handzeichen.'});
-    if(ri.s==='ja'){
+    if(ri.risiko==='ja'){
       const verknuepft = b.massnahmen.some(m=>m.status==='aktiv' && m.bezug.risiken.includes(r.k));
       if(!verknuepft)
         out.push({lvl:'crit', tab:'plan', t:'Risiko „'+rname+'“ ist bejaht – aber keine aktive Maßnahme nimmt darauf Bezug.', s:'Prüfrichtung „von der Matrix in den Plan“: erkanntes Risiko ohne Maßnahme ist eine Lücke im roten Faden.'});
     }
   });
+  if(s.eingang.text.trim() && offeneMatrix.length)
+    out.push({lvl:'warn', tab:'sis', t:'Risikomatrix unvollständig: '+offeneMatrix.join(', ')+'.', s:'Beide Fragen der Matrix („Risiko?“ und „weitere Einschätzung notwendig?“) brauchen eine Antwort – auch das bewusste „nein“ ist eine fachliche Einschätzung.'});
+  /* Abgleich Fließtext ↔ Matrix (Fußnote der Orientierungshilfe; Schlüssigkeit, Prüfkriterium 1.7) */
+  const asp = (fk,key) => { const tf = s.themenfelder[fk]; return tf && tf.aspekte && tf.aspekte[key] ? (tf.aspekte[key].w||'') : ''; };
+  const widerspruch = (riskKey, text) => {
+    const ri = s.risiken[riskKey];
+    if(ri.risiko==='nein' && ri.we!=='ja')
+      out.push({lvl:'warn', tab:'sis', t:'Fließtext und Matrix widersprechen sich bei „'+RISK.find(r=>r.k===riskKey).name+'“.', s:text+' – die Matrix sagt aber „Risiko nein“. Schlüssigkeit herstellen: Matrix korrigieren oder die Einschätzung im Themenfeld begründen.'});
+  };
+  if(asp('tf2','risiken.dekubitus')==='ja') widerspruch('dekubitus','Im Themenfeld 2 sind dekubitusgefährdete Körperstellen gesetzt');
+  if(asp('tf2','sicherheit.sturz')==='ja') widerspruch('sturz','Im Themenfeld 2 sind Stürze in den letzten zwölf Monaten dokumentiert');
+  if(asp('tf3','symptome.schmerz')==='ja') widerspruch('schmerz','Im Themenfeld 3 sind Schmerzen gesetzt');
+  if(['teils','nein'].includes(asp('tf4','ausscheidung.harn')) || ['teils','nein'].includes(asp('tf4','ausscheidung.stuhl'))) widerspruch('inkontinenz','Im Themenfeld 4 ist eine Einschränkung der Kontinenz dokumentiert');
+  if(asp('tf4','ernaehrung.gewicht')==='ja') widerspruch('ernaehrung','Im Themenfeld 4 sind relevante Gewichtsschwankungen dokumentiert');
   b.massnahmen.filter(m=>m.status==='aktiv').forEach(m=>{
     if(!m.bezug.risiken.length && !m.bezug.felder.length)
       out.push({lvl:'warn', tab:'plan', t:'Maßnahme „'+m.titel+'“ hat keinen Bezug zu SIS oder Risikomatrix.', s:'Keine Maßnahme ohne erhobene Grundlage – sonst ist die Ableitung nicht nachvollziehbar.'});
@@ -564,27 +584,32 @@ function vSis(b){
     ${TF.map((f,i)=>tfCard(b,f,i)).join('')}
   </div>
 
-  <div class="section-head"><h2>Risikomatrix</h2></div>
+  <div class="section-head"><h2>Risikomatrix</h2>
+  <div class="faint">Erste fachliche Einschätzung der für Pflege und Betreuung relevanten Risiken und Phänomene</div></div>
   ${warum('matrix')}
   <div class="card" style="margin-top:10px">
     ${RISK.map(r=>{
       const ri = s.risiken[r.k];
       const isSonst = r.k==='sonstiges';
+      const relevant = ri.risiko==='ja' || ri.we==='ja';
       return `<div class="risk-row">
-        <span class="risk-name">${isSonst? '<input type="text" data-risklabel="'+r.k+'" value="'+esc(ri.label)+'" placeholder="Sonstiges …" style="max-width:160px">' : r.name}</span>
-        <div class="seg small">
-          ${segBtn('risk:'+r.k,'ja',ri.s,'Risiko ja')}${segBtn('risk:'+r.k,'nein',ri.s,'nein')}${segBtn('risk:'+r.k,'we',ri.s,'weitere Einschätzung')}
-        </div>
-        ${ri.s==='we' ? `<div class="risk-detail">
+        <span class="risk-name">${isSonst? '<input type="text" data-risklabel="'+r.k+'" value="'+esc(ri.label)+'" placeholder="Sonstiges …" style="max-width:150px">' : r.name}</span>
+        <span class="risk-q"><span>Risiko</span>
+          <span class="seg small">${segBtn('riskja:'+r.k,'ja',ri.risiko,'ja')}${segBtn('riskja:'+r.k,'nein',ri.risiko,'nein')}</span></span>
+        <span class="risk-q"><span>weitere Einschätzung notwendig</span>
+          <span class="seg small">${segBtn('riskwe:'+r.k,'ja',ri.we,'ja')}${segBtn('riskwe:'+r.k,'nein',ri.we,'nein')}</span></span>
+        ${relevant ? `<div class="risk-detail row" style="gap:8px"><span class="faint">aus Themenfeld:</span><span class="tfchips">${[1,2,3,4,5].map(n=>'<button type="button" data-risktf="'+r.k+'|'+n+'" aria-pressed="'+ri.felder.includes(n)+'" title="'+esc(TF[n-1].name)+'">'+n+'</button>').join('')}</span></div>`:''}
+        ${ri.we==='ja' ? `<div class="risk-detail">
           <textarea data-risktext="${r.k}" placeholder="Differenzierte Einschätzung: Instrument (z. B. Braden, BESD) oder begründete fachliche Einschätzung – mit Datum und Handzeichen.">${esc(ri.text)}</textarea>
           ${!ri.text.trim()?'<div class="hint"><b>Offen:</b> ohne differenzierte Einschätzung bleibt die Matrix hier unvollständig.</div>':''}
         </div>`:''}
-        ${ri.s==='ja' ? (function(){
+        ${ri.risiko==='ja' ? (function(){
           const n = b.massnahmen.filter(m=>m.status==='aktiv' && m.bezug.risiken.includes(r.k)).length;
           return '<div class="risk-detail hint">'+(n? '✓ '+n+' Maßnahme'+(n>1?'n':'')+' im Plan verknüpft.' : '<b>Noch keine Maßnahme verknüpft</b> – erkanntes Risiko braucht eine Antwort im Plan.')+'</div>';
         })():''}
       </div>`;
     }).join('')}
+    <div class="hint" style="margin-top:8px">Themenfeld 6 (Wohnen) wird in der Matrix nicht eingeschätzt. Den Abgleich der Risiko-Aussagen im Fließtext (Themenfelder 2–4) mit der Matrix übernimmt das Werkzeug automatisch und meldet Widersprüche in der Übersicht.</div>
   </div>`;
 }
 
@@ -605,6 +630,20 @@ function migrateBewohner(b){
     if(typeof v === 'string') b.sis.themenfelder[f.k] = Object.assign(leererTf(), {text:v, manuell:!!v.trim()}); // Bestands-Freitext bleibt erhalten
     else if(!v || typeof v !== 'object') b.sis.themenfelder[f.k] = leererTf();
     else { v.aspekte = v.aspekte||{}; v.frei = v.frei||''; v.text = v.text||''; v.manuell = !!v.manuell; }
+  });
+  b.sis.risiken = b.sis.risiken || {};
+  RISK.forEach(r=>{
+    let ri = b.sis.risiken[r.k];
+    if(!ri || typeof ri !== 'object') ri = b.sis.risiken[r.k] = {};
+    if(ri.s !== undefined){ // Altformat: eine kombinierte Dreifach-Auswahl
+      if(ri.s==='ja') ri.risiko='ja';
+      else if(ri.s==='nein') ri.risiko='nein';
+      else if(ri.s==='we') ri.we='ja';
+      delete ri.s;
+    }
+    ri.risiko = ri.risiko||''; ri.we = ri.we||'';
+    ri.felder = Array.isArray(ri.felder)?ri.felder:[];
+    ri.text = ri.text||''; ri.label = ri.label||'';
   });
 }
 function migrate(s){ (s.bewohner||[]).forEach(b=>{ try{ migrateBewohner(b); }catch(e){} }); return s; }
@@ -999,7 +1038,7 @@ function wizPositiv(){
 function wizMassnahme(mid){
   const b = aktiv();
   const m = mid ? b.massnahmen.find(x=>x.id===mid) : null;
-  const risiken = RISK.filter(r=> b.sis.risiken[r.k].s==='ja' || b.sis.risiken[r.k].s==='we' || (m && m.bezug.risiken.includes(r.k)));
+  const risiken = RISK.filter(r=> b.sis.risiken[r.k].risiko==='ja' || b.sis.risiken[r.k].we==='ja' || (m && m.bezug.risiken.includes(r.k)));
   openModal(mHead(m?'Maßnahme bearbeiten':'Neue Maßnahme','Konkret genug für Vertretung und Einarbeitung: Was, wie, wann, durch wen.')+`
   <div class="field"><label class="fl" for="mTitel">Maßnahme (Was?)</label>
     <input type="text" id="mTitel" value="${esc(m?m.titel:'')}" placeholder="z. B. Begleitung zum Mittagstisch"></div>
@@ -1058,7 +1097,7 @@ function fhKapitel(){ return (window.KOMPENDIUM && KOMPENDIUM.kapitel || []).fil
 /* Passende Kapitel: aus dem gerade angehakten Bezug im Editor und den bejahten Risiken der SIS */
 function fhPassend(b){
   const chk = id => el(id) ? Array.from(el(id).querySelectorAll('input:checked')).map(x=>x.value) : [];
-  const risk = new Set(chk('mBezR').concat(RISK.filter(r=>b.sis.risiken[r.k].s==='ja').map(r=>r.k)));
+  const risk = new Set(chk('mBezR').concat(RISK.filter(r=>b.sis.risiken[r.k].risiko==='ja').map(r=>r.k)));
   const feld = new Set(chk('mBezF'));
   return new Set(fhKapitel().filter(c=> c.risiken.some(k=>risk.has(k)) || c.felder.some(k=>feld.has(k))).map(c=>c.k));
 }
@@ -1202,11 +1241,17 @@ function bindPanel(b){
   bindTf(b);
   p.querySelectorAll('[data-risktext]').forEach(t=>t.oninput = e=>{ b.sis.risiken[t.dataset.risktext].text=e.target.value; save(); });
   p.querySelectorAll('[data-risklabel]').forEach(t=>t.oninput = e=>{ b.sis.risiken[t.dataset.risklabel].label=e.target.value; save(); });
+  p.querySelectorAll('[data-risktf]').forEach(btn=>btn.onclick=()=>{
+    const [k,n] = btn.dataset.risktf.split('|'); const ri = b.sis.risiken[k]; const num = parseInt(n,10);
+    ri.felder = ri.felder.includes(num) ? ri.felder.filter(x=>x!==num) : ri.felder.concat(num).sort();
+    persist(); render();
+  });
   p.querySelectorAll('[data-seg]').forEach(btn=>btn.onclick=()=>{
     const g = btn.dataset.seg, v = btn.dataset.val;
     if(g==='anlass') b.sis.anlass = (b.sis.anlass===v?'':v);
     else if(g==='quelle') b.sis.eingang.quelle = v;
-    else if(g.startsWith('risk:')){ const k=g.slice(5); b.sis.risiken[k].s = (b.sis.risiken[k].s===v?'':v); }
+    else if(g.startsWith('riskja:')){ const k=g.slice(7); const ri=b.sis.risiken[k]; ri.risiko = (ri.risiko===v?'':v); }
+    else if(g.startsWith('riskwe:')){ const k=g.slice(7); const ri=b.sis.risiken[k]; ri.we = (ri.we===v?'':v); }
     persist(); render();
   });
   /* Plan */
