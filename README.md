@@ -3,7 +3,9 @@
 **Pflegeprozess-Werkzeug nach Strukturmodell** – eine Single-File-HTML-App
 (`index.html`) für Pflegekräfte: SIS → Maßnahmenplan → Bericht (Abweichung)
 → Evaluation, mit geführten Eingaben und „Warum?“-Erklärungen zu jedem
-Element. Daten liegen im Browser (localStorage), Export/Import als JSON.
+Element. Daten liegen im Browser (localStorage), Export/Import als JSON;
+SIS-Bogen und Maßnahmenplan lassen sich drucken bzw. über den
+Browser-Druckdialog als PDF speichern („Drucken / PDF“, A4-Layout).
 
 - `index.html` – das Pflegeprozess-Werkzeug (keine Abhängigkeiten, offline lauffähig)
 - `themenfelder.js` – Aspekt-Katalog der sechs SIS-Themenfelder (Checkbox-Aspekte,

@@ -139,6 +139,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--accent-100); bor
 .choices{display:grid; gap:10px;}
 .choice{display:block; width:100%; text-align:left; background:var(--paper2); border:1px solid var(--line-strong); border-radius:6px; padding:14px 16px;}
 .choice:hover{border-color:var(--accent);}
+.choice[aria-pressed="true"]{border-color:var(--accent); background:var(--accent-50); box-shadow:inset 0 0 0 1px var(--accent);}
 .choice .t{font-family:'Newsreader',Georgia,serif; font-size:17px; display:block; margin-bottom:2px;}
 .choice .s{font-size:13px; color:var(--ink-soft); display:block;}
 
@@ -253,6 +254,68 @@ mark.ph{background:var(--gold-50); color:var(--gold-dark); border-bottom:1px das
 footer{border-top:1px solid var(--line); margin-top:48px; padding-top:14px;}
 @media print{ .tabs,.bw-bar,.btn,#toasts{display:none !important} body{background:#fff;color:#000} }
 </style>
+<style id="druckCss">
+/* ===== Druck / PDF: SIS-Bogen und Maßnahmenplan (A4, Schwarz auf Weiß) ===== */
+.pd{font-family:'Inter',system-ui,-apple-system,sans-serif; font-size:10.5pt; line-height:1.45; color:#000; background:#fff;}
+.pd *{box-sizing:border-box}
+.pd p{max-width:none; margin:0 0 6pt}
+.pd table.pd-doc{width:100%; border-collapse:collapse}
+.pd table.pd-doc>thead{display:table-header-group}
+.pd table.pd-doc>thead td{font-size:8pt; color:#555; border-bottom:.5pt solid #999; padding:0 0 3pt; font-family:'Inter',system-ui,sans-serif}
+.pd table.pd-doc>thead td span{float:right}
+.pd table.pd-doc>tbody>tr>td{padding:0; vertical-align:top}
+.pd .pd-top{display:flex; justify-content:space-between; align-items:flex-end; gap:12pt; margin:10pt 0 10pt; border-bottom:1.5pt solid #000; padding-bottom:8pt}
+.pd .pd-eyebrow{font-size:8pt; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:#8B1A4A; margin-bottom:2pt}
+.pd h1{font-family:'Newsreader',Georgia,serif; font-size:20pt; font-weight:500; margin:0; line-height:1.15; letter-spacing:-.01em; text-wrap:balance}
+.pd .pd-name{font-family:'Newsreader',Georgia,serif; font-size:15pt; text-align:right; line-height:1.2}
+.pd .pd-name small{display:block; font-family:'Inter',system-ui,sans-serif; font-size:8pt; color:#555; margin-top:2pt}
+.pd h2{font-family:'Newsreader',Georgia,serif; font-size:14pt; font-weight:500; margin:14pt 0 6pt; page-break-after:avoid; break-after:avoid}
+.pd h2 .pd-sub{font-family:'Inter',system-ui,sans-serif; font-size:8.5pt; color:#555; font-weight:400; margin-left:6pt}
+.pd h3{font-family:'Newsreader',Georgia,serif; font-size:11.5pt; font-weight:600; margin:0 0 2pt}
+.pd .pd-stamm{display:grid; grid-template-columns:repeat(4,1fr); gap:6pt; margin:0 0 4pt}
+.pd .pd-stamm div{border:.5pt solid #999; padding:4pt 6pt; min-height:30pt; font-size:10pt}
+.pd .pd-l{display:block; font-size:7.5pt; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#555; margin-bottom:1pt}
+.pd .pd-text{white-space:pre-wrap; border:.5pt solid #999; padding:6pt 8pt; min-height:34pt; margin:0 0 4pt; font-size:10.5pt}
+.pd .pd-leer{color:#777; font-style:italic}
+.pd .pd-leit{font-size:8.5pt; color:#555; margin:0 0 3pt}
+.pd .pd-q{font-style:italic; color:#333; margin:0 0 4pt}
+.pd .pd-tf{page-break-inside:avoid; break-inside:avoid; margin:0 0 8pt}
+.pd table.pd-grid{width:100%; border-collapse:collapse; font-size:9.5pt; margin:0 0 6pt}
+.pd table.pd-grid th,.pd table.pd-grid td{border:.5pt solid #999; padding:4pt 5pt; vertical-align:top; text-align:left}
+.pd table.pd-grid th{background:#F3EFE8; font-weight:600; font-size:7.5pt; letter-spacing:.06em; text-transform:uppercase; color:#333; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+.pd table.pd-grid thead{display:table-header-group}
+.pd table.pd-grid tr{page-break-inside:avoid; break-inside:avoid}
+.pd table.pd-grid td.pd-pre{white-space:pre-wrap}
+.pd .pd-matrix th.c,.pd .pd-matrix td.c{text-align:center; width:6.5%; padding-left:2pt; padding-right:2pt}
+.pd .pd-matrix td.c{font-size:12pt; line-height:1; font-weight:600}
+.pd .pd-matrix td.c.n{color:#aaa; font-weight:400}
+.pd .pd-note{font-size:8.5pt; color:#555; margin:0 0 6pt}
+.pd .pd-ph{font-size:8pt; color:#A67D1A; margin-top:2pt}
+.pd .pd-sign{display:grid; grid-template-columns:repeat(3,1fr); gap:16pt; margin-top:26pt; page-break-inside:avoid; break-inside:avoid}
+.pd .pd-sign div{border-top:.5pt solid #000; padding-top:3pt; font-size:8pt; color:#555}
+.pd .pd-foot{font-size:8pt; color:#777; border-top:.5pt solid #999; margin-top:14pt; padding-top:4pt}
+.pd small{font-size:8.5pt; color:#555}
+.pd ul{margin:2pt 0 6pt; padding-left:14pt}
+.pd li{margin:0 0 2pt}
+.pd-break{page-break-before:always; break-before:page}
+/* Eigenständige Druckansicht (neuer Tab) */
+body.pd-standalone{margin:0; background:#e9e5de; color:#000}
+body.pd-standalone .pd-page{background:#fff; max-width:210mm; margin:0 auto; padding:14mm 16mm; min-height:297mm; box-shadow:0 2px 12px rgba(0,0,0,.12)}
+body.pd-standalone .pd-bar{position:sticky; top:0; z-index:5; display:flex; gap:8px; justify-content:flex-end; align-items:center; padding:8px 12px; background:#211B18; color:#F0EBE4; font:13px 'Inter',system-ui,sans-serif}
+body.pd-standalone .pd-bar button{font:inherit; font-weight:600; padding:6px 14px; border-radius:6px; border:none; background:#D4719A; color:#241016; cursor:pointer}
+body.pd-standalone .pd-bar span{margin-right:auto; opacity:.8}
+/* In der App: Druckdokument unsichtbar, erst beim Drucken allein sichtbar */
+#druck{display:none}
+@media print{
+  @page{size:A4; margin:12mm 14mm 14mm}
+  body.drucken{background:#fff !important; color:#000 !important}
+  body.drucken>*:not(#druck){display:none !important}
+  body.drucken #druck{display:block}
+  body.pd-standalone{background:#fff}
+  body.pd-standalone .pd-page{max-width:none; margin:0; padding:0; min-height:0; box-shadow:none}
+  body.pd-standalone .pd-bar{display:none}
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -265,6 +328,7 @@ footer{border-top:1px solid var(--line); margin-top:48px; padding-top:14px;}
       <p class="faint" style="margin:0">Steuern statt nachweisen: SIS → Maßnahmenplan → Bericht (Abweichung) → Evaluation.</p>
     </div>
     <div class="row">
+      <button class="btn small ghost" id="btnDruck">Drucken / PDF</button>
       <button class="btn small ghost" id="btnExport">Export</button>
       <button class="btn small ghost" id="btnImport">Import</button>
       <input type="file" id="fileImport" accept=".json" hidden>
@@ -559,6 +623,7 @@ function vSis(b){
   return `
   <div class="leitfrage"><b>Element 1 · Strukturierte Informationssammlung</b>
   Verständigung mit der Person, fachliche Einschätzung in sechs Themenfeldern, Risikoeinschätzung in der Matrix. Erhebung und Feststellung des Pflegebedarfs sind Fachkraft-Aufgabe (§ 4 PflBG).</div>
+  <div class="row" style="margin:0 0 12px"><button class="btn small" data-druck="sis">SIS drucken / PDF</button><span class="faint">Bogen mit Verständigungsprozess, Themenfeldern und Risikomatrix</span></div>
 
   <div class="card">
     <div class="grid g2">
@@ -814,7 +879,7 @@ function vPlan(b){
   <div class="leitfrage"><b>Element 2 · Maßnahmenplan</b>
   Übersetzt die SIS in konkrete, tagesstrukturierte Versorgung – und ist die Referenz für das Immer-so-Prinzip: Was hier steht, gilt als erbracht, ohne täglich abgezeichnet zu werden.</div>
   ${warum('tagesstruktur')}${warum('immerso')}
-  <div class="row" style="margin:14px 0 6px"><button class="btn primary" id="btnMNeu">+ Maßnahme</button>
+  <div class="row" style="margin:14px 0 6px"><button class="btn primary" id="btnMNeu">+ Maßnahme</button><button class="btn" data-druck="plan">Drucken / PDF</button>
   <span class="faint">${aktive.length} aktiv${beendete.length? ' · '+beendete.length+' beendet':''}</span></div>
   ${aktive.length===0 ? '<div class="empty"><span class="serif">Noch keine Maßnahmen</span>Leite sie aus der SIS ab: Jedes bejahte Risiko und jeder beschriebene Unterstützungsbedarf braucht eine Antwort im Plan.</div>' : ''}
   ${ZEITEN.map(z=>{
@@ -1269,6 +1334,7 @@ function bindPanel(b){
   const p = el('panel');
   p.querySelectorAll('[data-goto]').forEach(btn=>btn.onclick=()=>{ tab=btn.dataset.goto; render(); window.scrollTo({top:0}); });
   p.querySelectorAll('[data-switch]').forEach(btn=>btn.onclick=()=>{ store.activeId=btn.dataset.switch; persist(); render(); window.scrollTo({top:0}); });
+  p.querySelectorAll('[data-druck]').forEach(btn=>btn.onclick=()=>wizDruck(btn.dataset.druck));
   const bn = p.querySelector('[data-goto-bericht-neu]'); if(bn) bn.onclick = wizBericht;
   /* SIS */
   const bindTxt = (id, fn) => { const n = el(id); if(n) n.oninput = e=>{ fn(e.target.value); save(); }; };
@@ -1304,6 +1370,176 @@ function bindPanel(b){
   /* Eval */
   const ev = el('btnEvNeu'); if(ev) ev.onclick = wizEval;
 }
+
+/* ================= Drucken / PDF: SIS-Bogen und Maßnahmenplan ================= */
+const ANLASS_NAME = {einzug:'Einzug', rueckkehr:'Rückkehr aus der Klinik', veraenderung:'Wesentliche Veränderung'};
+function fmtDatum(s){ if(!s) return '–'; const d = new Date(s+'T00:00:00'); return isNaN(d) ? s : d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fmtDate(ts){ return new Date(ts).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function pdLeer(t){ return '<span class="pd-leer">'+t+'</span>'; }
+/* Dokumentrahmen: Tabelle mit thead, damit die Kopfzeile (Name · Dokument · Stand) auf jeder Seite wiederholt wird. */
+function pdDoc(b, lauf, inner){
+  return '<table class="pd-doc"><thead><tr><td>'+esc(anzeigeName(b))+' · '+esc(lauf)+'<span>SIS-Assist · gedruckt '+fmtTs(Date.now())+'</span></td></tr></thead>'+
+    '<tbody><tr><td>'+inner+'</td></tr></tbody></table>';
+}
+function pdTop(element, titel, b, sub){
+  return '<div class="pd-top"><div><div class="pd-eyebrow">Strukturmodell · '+esc(element)+'</div><h1>'+titel+'</h1></div>'+
+    '<div class="pd-name">'+esc(anzeigeName(b))+(sub?'<small>'+esc(sub)+'</small>':'')+'</div></div>';
+}
+function pdStamm(items){ return '<div class="pd-stamm">'+items.map(i=>'<div><span class="pd-l">'+esc(i[0])+'</span>'+(i[1]||'–')+'</div>').join('')+'</div>'; }
+function pdSign(){
+  return '<div class="pd-sign"><div>Datum</div><div>Handzeichen / Unterschrift verantwortliche PFK</div><div>Bewohner:in bzw. Vertretung (Kenntnisnahme, optional)</div></div>';
+}
+
+/* --- SIS-Bogen: A Verständigungsprozess · B Themenfelder · C Risikomatrix --- */
+function druckSis(b){
+  const s = b.sis;
+  const quelle = s.eingang.quelle==='selbst' ? 'Sicht der Person selbst'
+    : s.eingang.quelle==='fremd' ? 'Fremdauskunft'+(s.eingang.fremdWer?' durch '+s.eingang.fremdWer:'')
+    : s.eingang.quelle==='beides' ? 'Person selbst und Fremdauskunft'+(s.eingang.fremdWer?' ('+s.eingang.fremdWer+')':'') : '';
+  const aktiveM = b.massnahmen.filter(m=>m.status==='aktiv');
+  let h = pdTop('Element 1', 'Strukturierte Informations&shy;sammlung (SIS)', b, s.datum ? 'SIS vom '+fmtDatum(s.datum) : '');
+  h += pdStamm([['Bewohner:in', esc(anzeigeName(b))], ['Anlass', esc(ANLASS_NAME[s.anlass]||'')], ['Datum der SIS', esc(fmtDatum(s.datum))], ['Verantwortliche PFK (Hz)', esc(s.pfk)]]);
+
+  h += '<h2>A · Verständigungsprozess</h2>';
+  h += '<p class="pd-q">„Was bewegt Sie im Augenblick? Was brauchen Sie? Was können wir für Sie tun?“</p>';
+  h += '<div class="pd-text">'+(s.eingang.text.trim() ? esc(s.eingang.text) : pdLeer('Noch nicht dokumentiert.'))+'</div>';
+  h += '<div class="pd-note">Wessen Sicht: '+(quelle ? esc(quelle) : pdLeer('nicht angegeben'))+'</div>';
+
+  h += '<h2>B · Fachliche Einschätzung in sechs Themenfeldern</h2>';
+  TF.forEach((f,i)=>{
+    const t = tfText(b,f.k).trim();
+    h += '<div class="pd-tf"><h3>'+(i+1)+' · '+esc(f.name)+'</h3><div class="pd-leit">'+esc(f.leit)+'</div>'+
+      '<div class="pd-text">'+(t ? esc(t) : pdLeer('Keine Einschätzung dokumentiert.'))+'</div></div>';
+  });
+
+  h += '<h2>C · Risikomatrix<span class="pd-sub">Erste fachliche Einschätzung – Themenfeld 6 wird nicht eingeschätzt</span></h2>';
+  const mark = (v, soll) => '<td class="c'+(v===soll?'':' n')+'">'+(v===soll?'×':'')+'</td>';
+  h += '<table class="pd-grid pd-matrix"><thead><tr><th rowspan="2" style="vertical-align:bottom">Risiko / Phänomen</th><th colspan="2" class="c">Risiko</th><th colspan="2" class="c">weitere Einschätzung notwendig</th><th colspan="5" class="c">Bezug Themenfeld</th></tr>'+
+    '<tr><th class="c">ja</th><th class="c">nein</th><th class="c">ja</th><th class="c">nein</th>'+[1,2,3,4,5].map(n=>'<th class="c">'+n+'</th>').join('')+'</tr></thead><tbody>';
+  RISK.forEach(r=>{
+    const ri = s.risiken[r.k];
+    const name = r.k==='sonstiges' ? (ri.label.trim() ? 'Sonstiges: '+ri.label : 'Sonstiges') : r.name;
+    h += '<tr><td>'+esc(name)+'</td>'+mark(ri.risiko,'ja')+mark(ri.risiko,'nein')+mark(ri.we,'ja')+mark(ri.we,'nein')+
+      [1,2,3,4,5].map(n=>'<td class="c'+(ri.felder.includes(n)?'':' n')+'">'+(ri.felder.includes(n)?'×':'')+'</td>').join('')+'</tr>';
+  });
+  h += '</tbody></table>';
+  const weiter = RISK.filter(r=>s.risiken[r.k].we==='ja');
+  if(weiter.length){
+    h += '<h3>Differenzierte Einschätzung</h3><div class="pd-note">Instrument oder begründete fachliche Einschätzung – mit Datum und Handzeichen.</div>';
+    weiter.forEach(r=>{ const ri = s.risiken[r.k]; const name = r.k==='sonstiges'&&ri.label.trim()?ri.label:r.name;
+      h += '<div class="pd-tf"><b>'+esc(name)+'</b><div class="pd-text" style="min-height:22pt">'+(ri.text.trim()?esc(ri.text):pdLeer('Noch nicht dokumentiert.'))+'</div></div>'; });
+  }
+  const bejaht = RISK.filter(r=>s.risiken[r.k].risiko==='ja');
+  if(bejaht.length){
+    h += '<h3>Ableitung in den Maßnahmenplan</h3><ul>';
+    bejaht.forEach(r=>{ const ri = s.risiken[r.k]; const name = r.k==='sonstiges'&&ri.label.trim()?ri.label:r.name;
+      const ms = aktiveM.filter(m=>m.bezug.risiken.includes(r.k));
+      h += '<li><b>'+esc(name)+':</b> '+(ms.length ? esc(ms.map(m=>m.titel).join(' · ')) : pdLeer('noch keine Maßnahme verknüpft'))+'</li>'; });
+    h += '</ul>';
+  }
+  h += pdSign();
+  h += '<div class="pd-foot">Erstellt mit SIS-Assist (Strukturmodell). Kein Ersatz für die interne QM-Regelung – Gültigkeit nur in Verbindung mit der Pflegedokumentation der Einrichtung.</div>';
+  return pdDoc(b, 'Strukturierte Informationssammlung'+(s.datum?' vom '+fmtDatum(s.datum):''), h);
+}
+
+/* --- Maßnahmenplan: tagesstrukturiert, Bezug zu SIS und Matrix, optional beendete Maßnahmen --- */
+function druckPlan(b, mitBeendeten){
+  const aktive = b.massnahmen.filter(m=>m.status==='aktiv');
+  const beendete = b.massnahmen.filter(m=>m.status!=='aktiv');
+  const stand = aktive.length ? Math.max(...aktive.map(m=>m.updated||m.created||0)) : 0;
+  const letzteEval = b.evaluationen.length ? Math.max(...b.evaluationen.map(e=>e.ts)) : null;
+  const bezug = m => m.bezug.risiken.map(k=>{ const r=RISK.find(x=>x.k===k); const ri=b.sis.risiken[k]; return 'Risiko: '+(k==='sonstiges'&&ri.label?ri.label:r.name); })
+    .concat(m.bezug.felder.map(k=>{ const f=TF.find(x=>x.k===k); return 'TF '+f.k.slice(2)+' '+f.name; }));
+  const row = (m, z) => {
+    const auch = m.zeiten.filter(k=>k!==z).map(k=>(ZEITEN.find(x=>x.k===k)||{name:k}).name);
+    const bz = bezug(m);
+    return '<tr><td><b>'+esc(m.titel)+'</b>'+(auch.length?'<br><small>auch: '+esc(auch.join(', '))+'</small>':'')+'</td>'+
+      '<td class="pd-pre">'+(m.wie?esc(m.wie):pdLeer('–'))+(hatPlatzhalter(m)?'<div class="pd-ph">Enthält Beispielangaben in eckigen Klammern – für diese Person noch festlegen.</div>':'')+'</td>'+
+      '<td>'+(m.eigen?esc(m.eigen):'–')+'</td>'+
+      '<td><small>'+(bz.length?bz.map(esc).join('<br>'):'<span class="pd-leer">ohne Bezug</span>')+'</small></td></tr>';
+  };
+  let h = pdTop('Element 2', 'Maßnahmenplan', b, stand ? 'Stand '+fmtDate(stand) : '');
+  h += pdStamm([['Bewohner:in', esc(anzeigeName(b))], ['Stand des Plans', stand ? esc(fmtDate(stand)) : '–'], ['SIS vom', esc(fmtDatum(b.sis.datum))], ['Letzte Evaluation', letzteEval ? esc(fmtDate(letzteEval)) : 'noch keine']]);
+  h += '<div class="pd-note">Immer-so-Prinzip: Die hier beschriebene Regelversorgung gilt als erbracht, solange im Berichteblatt keine Abweichung dokumentiert ist. Der Plan muss für Vertretung und Einarbeitung eindeutig sein: Was, wie, wann, Eigenanteil der Person.</div>';
+  if(!aktive.length) h += '<div class="pd-text">'+pdLeer('Noch keine aktiven Maßnahmen.')+'</div>';
+  ZEITEN.forEach(z=>{
+    const ms = aktive.filter(m=>m.zeiten.includes(z.k)); if(!ms.length) return;
+    h += '<h2>'+esc(z.name)+'<span class="pd-sub">'+ms.length+' Maßnahme'+(ms.length>1?'n':'')+'</span></h2>'+
+      '<table class="pd-grid"><thead><tr><th style="width:24%">Maßnahme · Was?</th><th>Wie genau? Hilfsmittel, Besonderheiten</th><th style="width:19%">Eigenaktivität der Person</th><th style="width:18%">Bezug SIS / Matrix</th></tr></thead><tbody>'+
+      ms.map(m=>row(m, z.k)).join('')+'</tbody></table>';
+  });
+  if(mitBeendeten && beendete.length){
+    h += '<h2>Beendete Maßnahmen<span class="pd-sub">nicht mehr Teil der Regelversorgung</span></h2><table class="pd-grid"><thead><tr><th>Maßnahme</th><th style="width:22%">Beendet am</th></tr></thead><tbody>'+
+      beendete.map(m=>'<tr><td>'+esc(m.titel)+(m.wie?'<br><small>'+esc(m.wie)+'</small>':'')+'</td><td>'+(m.updated?esc(fmtDate(m.updated)):'–')+'</td></tr>').join('')+'</tbody></table>';
+  }
+  h += pdSign();
+  h += '<div class="pd-foot">Erstellt mit SIS-Assist (Strukturmodell). Änderungen am Plan nur durch die Pflegefachkraft (§ 4 PflBG); Abweichungen werden im Berichteblatt dokumentiert.</div>';
+  return pdDoc(b, 'Maßnahmenplan'+(stand?' · Stand '+fmtDate(stand):''), h);
+}
+
+function druckHtml(b, opt){
+  const teile = [];
+  if(opt.sis) teile.push(druckSis(b));
+  if(opt.plan) teile.push(druckPlan(b, opt.beendete));
+  return teile.map((t,i)=>'<section class="pd'+(i?' pd-break':'')+'">'+t+'</section>').join('');
+}
+function druckTitel(opt){ return opt.sis && opt.plan ? 'SIS und Maßnahmenplan' : opt.sis ? 'SIS' : 'Maßnahmenplan'; }
+/* Druck in der App: Dokument unsichtbar einhängen, beim Drucken allein zeigen (Browser-Dialog → „Als PDF speichern“). */
+function drucken(opt){
+  const b = aktiv(); if(!b) return;
+  closeModal();
+  let box = el('druck'); if(!box){ box = document.createElement('div'); box.id = 'druck'; document.body.appendChild(box); }
+  box.innerHTML = druckHtml(b, opt);
+  document.body.classList.add('drucken');
+  const done = ()=>{ document.body.classList.remove('drucken'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  window.print();
+}
+/* Eigenständige Druckansicht als eigene Seite – für Vorschau, zum Teilen und für Umgebungen ohne Druckdialog (z. B. Startbildschirm-App). */
+function druckStandalone(b, opt){
+  const css = (el('druckCss')||{}).textContent || '';
+  const titel = druckTitel(opt)+' · '+anzeigeName(b);
+  return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>'+esc(titel)+'</title>'+
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=Inter:wght@400;500;600&display=swap">'+
+    '<style>'+css+'</style></head><body class="pd-standalone">'+
+    '<div class="pd-bar"><span>'+esc(titel)+'</span><button type="button" onclick="window.print()">Drucken / als PDF speichern</button></div>'+
+    '<div class="pd-page">'+druckHtml(b, opt)+'</div></body></html>';
+}
+function druckNeuerTab(opt){
+  const b = aktiv(); if(!b) return;
+  const html = druckStandalone(b, opt);
+  const name = 'sis-assist-'+(opt.sis&&opt.plan?'sis-plan':opt.sis?'sis':'plan')+'-'+new Date().toISOString().slice(0,10)+'.html';
+  const blob = new Blob([html], {type:'text/html'});
+  const w = window.open(URL.createObjectURL(blob), '_blank');
+  if(w){ closeModal(); return; }
+  /* Pop-up blockiert (z. B. Startbildschirm-App): Datei teilen oder herunterladen */
+  const file = new File([blob], name, {type:'text/html'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    navigator.share({files:[file], title:druckTitel(opt)}).then(closeModal).catch(()=>{});
+  } else {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href);
+    closeModal(); toast('Druckansicht als Datei gespeichert – im Browser öffnen und drucken.');
+  }
+}
+function wizDruck(vor){
+  const b = aktiv(); if(!b){ toast('Erst eine Bewohner:in anlegen.'); return; }
+  const beendete = b.massnahmen.filter(m=>m.status!=='aktiv').length;
+  openModal(mHead('Drucken / PDF', 'Papier für Übergabe, Pflegevisite und Prüfung – oder im Druckdialog statt eines Druckers „Als PDF speichern“ wählen.')+
+    '<div class="field"><label class="fl">Was soll ausgegeben werden?</label><div class="choices" id="drWas">'+
+      '<button type="button" class="choice" data-was="sis" aria-pressed="'+(vor==='sis')+'"><span class="t">SIS-Bogen</span><span class="s">Verständigungsprozess, sechs Themenfelder als Fließtext, Risikomatrix mit differenzierter Einschätzung und Ableitung in den Plan.</span></button>'+
+      '<button type="button" class="choice" data-was="plan" aria-pressed="'+(vor==='plan')+'"><span class="t">Maßnahmenplan</span><span class="s">Tagesstrukturiert nach Tageszeiten: Was, wie genau, Eigenaktivität, Bezug zu SIS und Matrix.</span></button>'+
+      '<button type="button" class="choice" data-was="beides" aria-pressed="'+(vor==='beides')+'"><span class="t">SIS + Maßnahmenplan</span><span class="s">Beides in einem Dokument – der Plan beginnt auf einer neuen Seite.</span></button>'+
+    '</div></div>'+
+    (beendete ? '<div class="field"><label style="display:inline-flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" id="drBeendete"> Beendete Maßnahmen mit ausgeben ('+beendete+')</label></div>' : '')+
+    '<div class="row" style="margin-top:4px"><button class="btn primary" id="drGo">Drucken / als PDF speichern</button><button class="btn" id="drTab">Druckansicht in neuem Tab</button></div>'+
+    '<div class="hint" style="margin-top:10px">Das PDF entsteht im Druckdialog des Browsers (Ziel: „Als PDF speichern“). Auf iPhone und iPad: im Druckdialog „Teilen“ bzw. die Vorschau aufziehen und „In Dateien sichern“. Startet kein Druckdialog (z. B. als Startbildschirm-App), hilft die Druckansicht in neuem Tab.</div>');
+  const was = ()=>{ const a = el('drWas').querySelector('[aria-pressed="true"]'); return a ? a.dataset.was : 'beides'; };
+  const opt = ()=>{ const w = was(); return {sis: w!=='plan', plan: w!=='sis', beendete: !!(el('drBeendete') && el('drBeendete').checked)}; };
+  el('drWas').querySelectorAll('.choice').forEach(c=>c.onclick=()=>{ el('drWas').querySelectorAll('.choice').forEach(x=>x.setAttribute('aria-pressed','false')); c.setAttribute('aria-pressed','true'); });
+  el('drGo').onclick = ()=>drucken(opt());
+  el('drTab').onclick = ()=>druckNeuerTab(opt());
+}
+el('btnDruck').onclick = ()=>wizDruck(tab==='plan' ? 'plan' : tab==='sis' ? 'sis' : 'beides');
 
 /* Kopf-Leiste */
 el('bwSelect').onchange = e=>{ store.activeId = e.target.value; persist(); tab='start'; render(); };
