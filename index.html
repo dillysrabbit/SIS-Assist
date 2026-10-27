@@ -443,9 +443,9 @@ function nowLocal(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezo
 function daysSince(ts){ return Math.floor((Date.now()-ts)/86400000); }
 function rec(x){ return x.rec || x.ts; } // Aufnahmezeitpunkt (sekundengenau) für Werkzeug-Logik; ts bleibt die dokumentierte Zeit
 
-function neuBewohner(name, anrede){
+function neuBewohner(name, anrede, pronomen){
   const b = {
-    id: uid(), name: name, anrede: anrede||'neutral',
+    id: uid(), name: name, anrede: anrede||'neutral', pronomen: pronomen||'',
     sis: { anlass:'', datum:'', pfk:'',
       eingang:{text:'', quelle:'', fremdWer:''},
       themenfelder: Object.fromEntries(TF.map(f=>[f.k, leererTf()])),
@@ -463,6 +463,8 @@ function checkHandlungsbedarf(b){
   const s = b.sis;
   if(!s.eingang.text.trim())
     out.push({lvl:'warn', tab:'sis', t:'Die Eingangsfrage ist noch unbeantwortet.', s:'Der Verständigungsprozess ist der personzentrierte Einstieg – die Sicht der Person kommt zuerst.'});
+  if(!pronomenVon(b) && TF.some(f=>{ const tf = s.themenfelder[f.k]; return tf && !tf.manuell && Object.values(tf.aspekte||{}).some(a=>a && a.w); }))
+    out.push({lvl:'info', tab:'sis', t:'Kein Pronomen für den SIS-Text hinterlegt – der Name wird in jedem Satz wiederholt.', s:'Unter „Umbenennen“ Anrede oder Pronomen (er/sie) festlegen: Dann steht der Name nur im ersten Satz eines Themenfelds.'});
   const leereTf = TF.filter(f=>!tfText(b,f.k).trim());
   if(s.eingang.text.trim() && leereTf.length)
     out.push({lvl:'warn', tab:'sis', t: leereTf.length+' von 6 Themenfeldern sind noch leer.', s:'Ein leeres Themenfeld ist ein Einschätzungsverzicht: '+leereTf.map(f=>f.name).join(', ')+'.'});
@@ -694,6 +696,7 @@ function migrateBewohner(b){
     const m = /^(Frau|Herr)\s+(.+)$/i.exec(b.name||'');
     if(m){ b.anrede = m[1].toLowerCase(); b.name = m[2].trim(); } else b.anrede = 'neutral';
   }
+  b.pronomen = b.pronomen||''; // nur bei „ohne Anrede“ relevant: er / sie im erzeugten SIS-Text
   if(!b.sis) return;
   b.sis.themenfelder = b.sis.themenfelder || {};
   TF.forEach(f=>{
@@ -719,11 +722,15 @@ function migrateBewohner(b){
 }
 function migrate(s){ (s.bewohner||[]).forEach(b=>{ try{ migrateBewohner(b); }catch(e){} }); return s; }
 function tfGet(b,k){ let v = b.sis.themenfelder[k]; if(!v || typeof v!=='object'){ migrateBewohner(b); v = b.sis.themenfelder[k]; } return v; }
+function pronomenVon(b){ return b.anrede==='herr' ? 'er' : b.anrede==='frau' ? 'sie' : (b.pronomen||''); }
+/* Erste Nennung im Themenfeld: Name (mit Anrede); jede weitere: Pronomen. Ohne Anrede und ohne gewähltes Pronomen bleibt nur der Name. */
 function tfPerson(b){
-  const n = textName(b);
-  if(b.anrede==='herr') return {nom:'Herr '+n, dat:'Herrn '+n, akk:'Herrn '+n, pn:'er', pd:'ihm', pa:'ihn'};
-  if(b.anrede==='frau') return {nom:'Frau '+n, dat:'Frau '+n, akk:'Frau '+n, pn:'sie', pd:'ihr', pa:'sie'};
-  return {nom:n, dat:n, akk:n, pn:n, pd:n, pa:n};
+  const n = textName(b), pro = pronomenVon(b);
+  const nom = b.anrede==='herr' ? 'Herr '+n : b.anrede==='frau' ? 'Frau '+n : n;
+  const obl = b.anrede==='herr' ? 'Herrn '+n : nom;
+  if(pro==='er') return {nom, dat:obl, akk:obl, pn:'er', pd:'ihm', pa:'ihn'};
+  if(pro==='sie') return {nom, dat:obl, akk:obl, pn:'sie', pd:'ihr', pa:'sie'};
+  return {nom, dat:obl, akk:obl, pn:n, pd:n, pa:n};
 }
 function listJoin(a){ return a.length<=1 ? a.join('') : a.slice(0,-1).join(', ')+' und '+a[a.length-1]; }
 /* Gefüllte Detailfelder eines Eintrags zu Textbausteinen („Ch 14, seit 03/2026, …“); leere Felder entfallen. */
@@ -852,13 +859,25 @@ function bindTf(b){
     el('tfResetYes').onclick = ()=>{ tf.manuell = false; tf.text = ''; persist(); closeModal(); refresh(k); };
   });
 }
-function anredeSeg(id, cur){
-  return '<div class="seg small" id="'+id+'">'+[['frau','Frau'],['herr','Herr'],['neutral','ohne Anrede']].map(x=>'<button type="button" data-val="'+x[0]+'" aria-pressed="'+(cur===x[0])+'">'+x[1]+'</button>').join('')+'</div>';
+function segHtml(id, cur, opts){
+  return '<div class="seg small" id="'+id+'">'+opts.map(x=>'<button type="button" data-val="'+x[0]+'" aria-pressed="'+(cur===x[0])+'">'+x[1]+'</button>').join('')+'</div>';
 }
-function bindSeg(id){
+/* Anrede plus – nur bei „ohne Anrede“ – das Pronomen für den erzeugten SIS-Text (Name im ersten Satz, danach er/sie). */
+function personSeg(id, anrede, pronomen){
+  return '<div class="field"><label class="fl">Anrede</label>'+segHtml(id+'A', anrede, [['frau','Frau'],['herr','Herr'],['neutral','ohne Anrede']])+
+    '<div class="hint">Im erzeugten SIS-Text steht der Name nur im ersten Satz eines Themenfelds, danach „er“ bzw. „sie“.</div></div>'+
+    '<div class="field" id="'+id+'P" '+(anrede==='neutral'?'':'hidden')+'><label class="fl">Pronomen im SIS-Text</label>'+segHtml(id+'PS', pronomen||'', [['sie','sie'],['er','er']])+
+    '<div class="hint">Ohne Anrede braucht der Text diese Angabe – sonst wird der Name in jedem Satz wiederholt.</div></div>';
+}
+function bindSeg(id, leer){
   const n = el(id);
-  n.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{ n.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false')); btn.setAttribute('aria-pressed','true'); });
-  return ()=>{ const a = n.querySelector('[aria-pressed="true"]'); return a ? a.dataset.val : 'neutral'; };
+  n.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{ const war = btn.getAttribute('aria-pressed')==='true'; n.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false')); if(!(war && leer!==undefined)) btn.setAttribute('aria-pressed','true'); n.dispatchEvent(new Event('change')); });
+  return ()=>{ const a = n.querySelector('[aria-pressed="true"]'); return a ? a.dataset.val : (leer!==undefined ? leer : 'neutral'); };
+}
+function bindPerson(id){
+  const anrede = bindSeg(id+'A'), pronomen = bindSeg(id+'PS', '');
+  el(id+'A').addEventListener('change', ()=>{ el(id+'P').hidden = anrede()!=='neutral'; });
+  return ()=>({anrede:anrede(), pronomen: anrede()==='neutral' ? pronomen() : ''});
 }
 
 /* ---------- Maßnahmenplan ---------- */
@@ -1545,14 +1564,14 @@ el('btnDruck').onclick = ()=>wizDruck(tab==='plan' ? 'plan' : tab==='sis' ? 'sis
 el('bwSelect').onchange = e=>{ store.activeId = e.target.value; persist(); tab='start'; render(); };
 el('btnBwNeu').onclick = ()=>{
   openModal(mHead('Neue Bewohner:in','Name oder Kürzel – bitte datensparsam.')+
-    '<div class="field"><label class="fl">Anrede</label>'+anredeSeg('nbAnrede','')+'<div class="hint">Steuert „er/sie“ im erzeugten SIS-Text. Ohne Anrede wird der Name wiederholt.</div></div>'+
+    personSeg('nb','', '')+
     '<div class="field"><label class="fl" for="nbName">Name</label><input type="text" id="nbName" placeholder="z. B. M. (Zi. 12)"></div>'+
     '<button class="btn primary" id="nbSave">Anlegen</button>');
-  const nbAnrede = bindSeg('nbAnrede');
+  const nbPerson = bindPerson('nb');
   el('nbName').focus();
   el('nbSave').onclick = ()=>{
     const n = el('nbName').value.trim(); if(!n){ toast('Name fehlt.'); return; }
-    neuBewohner(n, nbAnrede()); closeModal(); tab='sis'; render();
+    const pz = nbPerson(); neuBewohner(n, pz.anrede, pz.pronomen); closeModal(); tab='sis'; render();
     toast('Angelegt – Einstieg ist die SIS: die Person kommt zuerst zu Wort.');
   };
   el('nbName').onkeydown = e=>{ if(e.key==='Enter') el('nbSave').click(); };
@@ -1560,11 +1579,11 @@ el('btnBwNeu').onclick = ()=>{
 el('btnBwUmben').onclick = ()=>{
   const b = aktiv(); if(!b) return;
   openModal(mHead('Umbenennen','')+
-    '<div class="field"><label class="fl">Anrede</label>'+anredeSeg('rnAnrede',b.anrede)+'</div>'+
+    personSeg('rn', b.anrede, b.pronomen)+
     '<div class="field"><label class="fl" for="rnName">Name</label><input type="text" id="rnName" value="'+esc(b.name)+'"></div>'+
     '<button class="btn primary" id="rnSave">Speichern</button>');
-  const rnAnrede = bindSeg('rnAnrede');
-  el('rnSave').onclick = ()=>{ const n=el('rnName').value.trim(); if(n){ b.name=n; b.anrede=rnAnrede(); persist(); closeModal(); render(); } };
+  const rnPerson = bindPerson('rn');
+  el('rnSave').onclick = ()=>{ const n=el('rnName').value.trim(); if(n){ const pz = rnPerson(); b.name=n; b.anrede=pz.anrede; b.pronomen=pz.pronomen; persist(); closeModal(); render(); } };
 };
 el('btnBwDel').onclick = ()=>{
   const b = aktiv(); if(!b) return;
