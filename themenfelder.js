@@ -12,7 +12,8 @@
                b) Einzelaspekte: jeder Aspekt hat eine eigene "satz"-Tabelle pro Skalenwert.
    Platzhalter {N} Nominativ, {Nd} Dativ, {Na} Akkusativ – die erste Nennung im Themenfeld wird zum
                Namen („Herr Mustermann"), jede weitere zum Pronomen (er/sie, ihm/ihr, ihn/sie).
-               Bei Anrede „neutral" wird immer der Name eingesetzt.
+               Das Pronomen folgt der Anrede (Frau → sie, Herr → er); bei „ohne Anrede" dem in der App
+               gewählten Pronomen. Fehlt beides, wird immer der Name eingesetzt.
    ph          Platzhalter des Bemerkungsfeldes (Beispiel für eine konkrete Beobachtung).
    details     Optional je Aspekt: strukturierte Zusatzfelder, die nur bei den Werten in "bei" eingeblendet werden
                (z. B. Art und Lokalisation einer Wunde). "felder" sind kleine Textfelder (k, l, ph) mit einem
